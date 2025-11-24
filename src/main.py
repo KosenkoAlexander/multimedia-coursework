@@ -1,4 +1,4 @@
 # full program should be started from here
 
-if __name__=='__main'__:
+if __name__=='__main__':
     pass
