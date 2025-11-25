@@ -1,0 +1,5 @@
+espnet==202511
+espnet-model-zoo==0.1.7
+torchaudio==2.9.1
+pygame==2.6.1
+pillow==12.0.0
