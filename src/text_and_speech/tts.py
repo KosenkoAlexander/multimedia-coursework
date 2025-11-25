@@ -15,7 +15,7 @@ class TTS:
         self.model = Text2Speech.from_pretrained("kan-bayashi/ljspeech_fastspeech2")
         # print(self.model.__dict__)          ==> a lot
         # print(self.model.vocoder.__dict__)  ==> a lot
-        self.frame_ms = int(self.model.vocoder.params["n_shift"]) / self.model.fs * 1000 * 0.9 # without 0.9 lagged behind visuals
+        self.frame_ms = int(self.model.vocoder.params["n_shift"]) / self.model.fs * 1000
         self.token_list = self.model.train_args.token_list
     
 
@@ -27,7 +27,7 @@ class TTS:
         """
         out_path = f"tmp/{out_name}.wav"
         silence_frames = 4
-        silence = np.zeros(silence_frames*int(self.model.fs * self.frame_ms / 900), dtype=np.float32)
+        silence = np.zeros(silence_frames*int(self.model.vocoder.params["n_shift"]), dtype=np.float32)
 
         out_wav = np.empty((0,), dtype=np.float32)
         phonemes: str = []
@@ -39,9 +39,10 @@ class TTS:
             out_sentence_wav = np.concatenate((silence, espnet_sentence["wav"].view(-1).cpu().numpy())) 
             out_wav = np.concatenate((out_wav, out_sentence_wav))
 
-            processed = self.model.preprocess_fn("test", {"text": text, "lang": None})  # magic call to preprocess_fn
+            processed = self.model.preprocess_fn("test", {"text": sentence, "lang": None})  # magic call to preprocess_fn
             tokens = processed["text"]
-            sentence_phonemes: list[str] = [".."] + [self.token_list[i] for i in tokens.tolist()] 
+            sentence_phonemes: list[str] = ["<blank>"] + [self.token_list[i] for i in tokens.tolist()] 
+            # print(sentence_phonemes)
             sentence_frame_duration = np.concatenate(([silence_frames], espnet_sentence["duration"])) 
             phonemes.extend(sentence_phonemes)
             frame_duration.extend(sentence_frame_duration)
@@ -55,14 +56,14 @@ class TTS:
         phoneme_delay = []
         cumulative_int_ms = 0
         cumulative_ms = 0
+        open("tmp/phoneme_delay.txt", "w").close()
         for ph, fr in zip(phonemes, frame_duration):
             fr = int(fr)
-            # if not ph[0].isalpha():
-            #     fr -= 1
-            cumulative_ms += fr * self.frame_ms
+            cumulative_ms += fr * self.frame_ms * 1.045  # delays came up to 36sec instead of 38??
             delay_int_ms = int(cumulative_ms - cumulative_int_ms)
             cumulative_int_ms += delay_int_ms
-            # print(int(fr), cumulative_ms, cumulative_int_ms)
+            with open("tmp/phoneme_delay.txt", "a") as f:
+                f.write(f"{ph}, {fr}, {cumulative_ms}, {cumulative_int_ms}\n")
             phoneme_delay.append({"phoneme": ph, "delay": delay_int_ms})
 
         return out_path, phoneme_delay

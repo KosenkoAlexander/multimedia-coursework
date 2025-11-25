@@ -69,18 +69,38 @@ class PhonemeVisualizer:
 
     def update_loop(self, phoneme_index: int):
         """Update visuals phoneme-by-phoneme parallel to the audio"""
-        print(pygame.mixer.music.get_pos())
+        print(pygame.mixer.music.get_pos(), end=", ")
         if phoneme_index >= len(phonemes):
             return
         current = phonemes[phoneme_index]
+        ph = current["phoneme"]
+        print(ph)
+        d = 8 if ph=="<blank>" else 1
+
+        self.root.after(current["delay"]-d, self.update_loop, phoneme_index+1)
         self.draw_phoneme(current["phoneme"])
-
-        self.root.after(current["delay"], self.update_loop, phoneme_index+1)
-
 
 
 tts = TTS()
-out_path, phonemes = tts.run("""Hello world. Nice one, and nice another. Look at me go, i am unstoppable.""")
+out_path, phonemes = tts.run("""
+According to all known laws of aviation, there is no way a bee should be able to fly.
+Its wings are too small to get its fat little body off the ground.
+The bee, of course, flies anyway because bees don't care what humans think is impossible.
+Yellow, black, Yellow, black, Yellow, black, Yellow, black.
+Ooh, black and yellow!
+Let's shake it up a little.
+Barry! Breakfast is ready!
+Coming!
+Hang on a second.
+Hello?
+Barry?
+Adam?
+Can you believe this is happening?
+I can't.
+I'll pick you up.
+Looking sharp.
+Use the stairs, Your father paid good money for those.
+Sorry. I'm excited.""")
 image = Image.open("phoneme_mouth_chart.jpg")
 
 
