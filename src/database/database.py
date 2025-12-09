@@ -1,6 +1,5 @@
 import psycopg2
 
-
 class DatabaseConnector:
     def __init__(self, dbname, user, password, host='localhost', port='5432'):
         try:
@@ -69,6 +68,9 @@ class DatabaseConnector:
         with self.conn.cursor() as cur:
             cur.execute(query, (genres,))
             return [row[0] for row in cur.fetchall()]
+
+    def search_books_by_genres_or_authors(self, genres, authors): # return books that correspond to genres OR authors (so it may have wrong genres or wrong authors but not both), return as tuple (book, authors_list, genres_list)
+        pass
 
     def search_libraries_with_book(self, book_name):
         if not self.conn: return []
