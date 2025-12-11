@@ -1,72 +1,184 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const threejs_container = document.getElementById('threejs_container');
-const cw = threejs_container.getBoundingClientRect().width;
-const ch = threejs_container.getBoundingClientRect().height;
+let threejs_container, clock, mouthMixer, mixer, actions, activeAction, previousAction;
+let camera, scene, renderer, model;
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50, cw / ch, 0.1, 10);
+const api = { state: 'Idle' }
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(cw, ch);
-threejs_container.appendChild(renderer.domElement);
+const API = {
+    IDLE: "Idle",
+    LISTEN: "Listen",
+    TALK: "Think",
+    YES: "Yes",
+    NO: "No"
+};
 
-function sanity_check() {
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.y = -1;
-    scene.add(cube);
+init()
+
+function init() {
+    threejs_container = document.getElementById('threejs_container');
+    const cw = threejs_container.getBoundingClientRect().width;
+    const ch = threejs_container.getBoundingClientRect().height;
+
+    camera = new THREE.PerspectiveCamera(50, cw / ch, 0.1, 10);
+    camera.position.z = 1.5;
+    camera.position.y = 1.6;
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x8ebfde);
+
+    clock = new THREE.Clock();
+
+    // lights
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1));
+    const dir_light = new THREE.DirectionalLight(0xffffff, 2);
+    dir_light.position.set(10, 10, 5);
+    scene.add(dir_light);
+
+    // model
+
+    const loader = new GLTFLoader();
+    loader.load('static/agent.glb', function (gltf) {
+
+        model = gltf.scene;
+        scene.add(model);
+        setMouthMixer(model);
+        createUI(model, gltf.animations);
+        // const agent = model["children"][0];
+
+    }, undefined, function (error) {
+        console.error(error);
+    });
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(cw, ch);
+    renderer.setAnimationLoop(animate);
+    threejs_container.appendChild(renderer.domElement);
+
 }
-// sanity_check()
 
-const loader = new GLTFLoader();
-let mixer;
-loader.load('static/LabX.glb', function (gltf) {
-    let gl_scene = gltf.scene; scene.add(gl_scene); // console.log(gl_scene);
-    const mesh = gl_scene["children"][0]; // console.log(mesh);
-    // mesh['morphTargetInfluences']['0'] = 1;
-
+function setMouthMixer(model) {
+    const head = model.getObjectByName("head_1")
     const trackname = '.morphTargetInfluences[0]';
     const half_yap_sec = 0.2;
-    const morphTrack = new THREE.NumberKeyframeTrack(trackname, [0, half_yap_sec, 2 * half_yap_sec], [1, 0, 1]);
+
+    const morphTrack = new THREE.NumberKeyframeTrack(trackname, [0, half_yap_sec, 2 * half_yap_sec], [0, 1, 0]);
     const clip = new THREE.AnimationClip('morph', -1, [morphTrack]);
-    mixer = new THREE.AnimationMixer(mesh);
+    mouthMixer = new THREE.AnimationMixer(head);
 
-    const action = mixer.clipAction(clip);
-
+    const action = mouthMixer.clipAction(clip);
     action.setLoop(THREE.LoopRepeat);
     action.play();
-    mixer.setTime(0);
-},
-    undefined, function (error) { console.error(error); }
-);
+}
 
-scene.background = new THREE.Color(0x8ebfde);
-scene.add(new THREE.AmbientLight(0xffffff, 1));
-const dir_light = new THREE.DirectionalLight(0xffffff, 2);
-dir_light.position.set(10, 10, 5);
-scene.add(dir_light);
+function createUI(model, animations) {
+    const states = ['Idle', 'Think', 'Listen'];
+    const emotes = ['Yes', 'No'];
 
-camera.position.z = 5;
+    mixer = new THREE.AnimationMixer(model);
+
+    actions = {};
+
+    for (let i = 0; i < animations.length; i++) {
+
+        const clip = animations[i];
+        const action = mixer.clipAction(clip);
+        actions[clip.name] = action;
+
+        if (emotes.indexOf(clip.name) >= 0 || states.indexOf(clip.name) >= 2) {
+
+            action.clampWhenFinished = true;
+            action.loop = THREE.LoopOnce;
+
+        }
+
+
+    }
+
+    // states
+
+    for (let i = 0; i < states.length; i++) {
+        const name = states[i];
+        api[name] = function () {
+            fadeToAction(name, 0.5);
+        }
+    }
+
+    // emotes
+
+    function createEmoteCallback(name) {
+        api[name] = function () {
+            fadeToAction(name, 0.2);
+            mixer.addEventListener('finished', restoreState);
+        }
+    }
+    function restoreState() {
+        mixer.removeEventListener('finished', restoreState);
+        fadeToAction(api.state, 0.2);
+    }
+
+    // function createEmoteCallback(name) {
+    //     api[name] = function () {
+    //         playAction(actions[name], 0.2);
+    //     }
+    // }
+
+    for (let i = 0; i < emotes.length; i++) {
+        createEmoteCallback(emotes[i])
+    }
+
+    // expressions 
+
+    // finally
+
+    activeAction = actions['Idle'];
+    activeAction.play()
+}
+
+function fadeToAction(name, duration) {
+
+    previousAction = activeAction;
+    activeAction = actions[name];
+
+    if (previousAction !== activeAction) {
+        previousAction.fadeOut(duration);
+    }
+
+    playAction(activeAction, duration)
+}
+
+function playAction(action, duration) {
+    action
+        .reset()
+        .setEffectiveTimeScale(1)
+        .setEffectiveWeight(1)
+        .fadeIn(duration)
+        .play();
+}
 
 let play = false;
-const clock = new THREE.Clock();
 function animate() {
-    window.requestAnimationFrame(animate);
+
+    const dt = clock.getDelta();
+    if (mixer) mixer.update(dt);
     if (play) {
-        mixer.update(clock.getDelta());
+        mouthMixer.update(dt);
     }
     renderer.render(scene, camera);
-}
-animate();
 
-function toggle_play() {
+}
+
+function toggleMouth() {
     play = !play;
-    if (!play) {
-        mixer.setTime(0);
+    mouthMixer.setTime(0);
+    if (play) {
+        api[API.TALK]();
+    }
+    else {
+        api[API.IDLE]();
     }
 }
 
-export { toggle_play }
+export { toggleMouth, api as agentApi, API as AGENTAPI }

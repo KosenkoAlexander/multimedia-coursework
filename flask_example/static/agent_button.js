@@ -1,4 +1,4 @@
-import { toggle_play } from "./threejs_container.js";
+import { toggleMouth, agentApi, AGENTAPI } from "./threejs_container.js";
 
 const recordButton = document.getElementById('agent_button');
 const statusDisplay = document.getElementById('status');
@@ -27,6 +27,7 @@ if ('webkitSpeechRecognition' in window) {
     };
 
     recognition.onerror = (event) => {
+        agentApi[AGENTAPI.NO]();
         console.error('Speech recognition error:', event.error);
         statusDisplay.textContent = `Error: ${event.error}`;
     };
@@ -40,15 +41,18 @@ if ('webkitSpeechRecognition' in window) {
                 speakText(finalTranscript);
             }, 1000); // 1 second delay
         } else {
+            agentApi[AGENTAPI.NO]();  // TODO Listen-Idle transition too snappy because of No
             statusDisplay.textContent = 'No speech detected.';
         }
     };
 
     recordButton.addEventListener('mousedown', () => {
+        agentApi[AGENTAPI.LISTEN]();
         recognition.start();
     });
 
     recordButton.addEventListener('mouseup', () => {
+        agentApi[AGENTAPI.IDLE]();
         recognition.stop();
     });
 
@@ -64,10 +68,10 @@ function speakText(text) {
         speechSynthesis.speak(utterance);
 
         utterance.onstart = () => {
-            toggle_play();
+            toggleMouth();
         };
         utterance.onend = (event) => {
-            toggle_play();
+            toggleMouth();
             statusDisplay.textContent = 'Ready.';
         };
     } else {
