@@ -4,7 +4,6 @@ const recordButton = document.getElementById('agent_button');
 const statusDisplay = document.getElementById('status');
 let recognition;
 let finalTranscript = '';
-let utterance;
 
 if ('webkitSpeechRecognition' in window) {
     statusDisplay.textContent = 'Ready.';
@@ -33,13 +32,14 @@ if ('webkitSpeechRecognition' in window) {
     };
 
     recognition.onend = () => {
-        statusDisplay.textContent = 'Processing...';
-        finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
+        statusDisplay.textContent = 'Answer in progres...'; // finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
         if (finalTranscript) {
+            // console.log(finalTranscript);
             setTimeout(() => {
-                statusDisplay.textContent = `You said: "${finalTranscript}"`;
-                speakText(finalTranscript);
-            }, 1000); // 1 second delay
+                statusDisplay.textContent = "Ready.";
+            }, 5 * 1000);
+            // TODO process finalTranscript
+            // make request to python api here!!!
         } else {
             agentApi[AGENTAPI.NO]();  // TODO Listen-Idle transition too snappy because of No
             statusDisplay.textContent = 'No speech detected.';
@@ -59,22 +59,4 @@ if ('webkitSpeechRecognition' in window) {
 } else {
     statusDisplay.textContent = 'Web Speech API is not supported in this browser.';
     recordButton.disabled = true;
-}
-
-function speakText(text) {
-    if ('speechSynthesis' in window) {
-        utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        speechSynthesis.speak(utterance);
-
-        utterance.onstart = () => {
-            toggleMouth();
-        };
-        utterance.onend = (event) => {
-            toggleMouth();
-            statusDisplay.textContent = 'Ready.';
-        };
-    } else {
-        console.warn('Text-to-speech not supported in this browser.');
-    }
 }

@@ -45,7 +45,7 @@ function init() {
         model = gltf.scene;
         scene.add(model);
         setMouthMixer(model);
-        createUI(model, gltf.animations);
+        createApi(model, gltf.animations);
         // const agent = model["children"][0];
 
     }, undefined, function (error) {
@@ -73,7 +73,7 @@ function setMouthMixer(model) {
     action.play();
 }
 
-function createUI(model, animations) {
+function createApi(model, animations) {
     const states = ['Idle', 'Think', 'Listen'];
     const emotes = ['Yes', 'No'];
 
