@@ -23,6 +23,11 @@
             <p>
                 {{ form.remember_me() }} {{ form.remember_me.label}}
             </p>
+            {% if login_error %}
+                <p>
+                    <span style="color:red;">{{ login_error }}</span>
+                </p>
+            {% endif %}
             <p>
                 {{ form.submit() }}
             </p>

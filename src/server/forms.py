@@ -26,4 +26,12 @@ class RegistrationForm(FlaskForm):
     def validate_email(self, email):
         pass #TODO
 
-   
+
+class ProfileUsernameForm(FlaskForm):
+    username = StringField('New username', validators=[DataRequired()])
+    submit_username = SubmitField('Change')
+
+class ProfilePasswordForm(FlaskForm):
+    password = PasswordField('New password', validators=[DataRequired()])
+    password2 = PasswordField('Repeat new password', validators=[DataRequired(), EqualTo('password')])
+    submit_password = SubmitField('Change')

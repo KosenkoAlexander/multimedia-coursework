@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title> Enter your account details: </title>
+    </head>
+    <body>
+        <p><a href="{{ url_for('index') }}">Back</a></p>
+        <form action="" method="post" novalidate>
+            {{ form_username.hidden_tag() }}
+            <p><h1>Change username</h1></p>
+            <p>
+                {{ form_username.username.label }}<br>
+                {{ form_username.username() }}
+                {% for error in form_username.username.errors %}
+                <span style="color:red;">{{ error }}</span>
+                {% endfor %}
+            </p>
+            <p>{{ form_username.submit_username() }}</p>
+        </form>
+        <form action="" method="post" novalidate>
+            {{ form_password.hidden_tag() }}
+            <p><h1>Change password</h1></p>
+            <p>
+                {{ form_password.password.label }}<br>
+                {{ form_password.password() }}
+                {% for error in form_password.password.errors %}
+                <span style="color:red;">{{ error }}</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form_password.password2.label }}<br>
+                {{ form_password.password2() }}
+                {% for error in form_password.password2.errors %}
+                <span style="color:red;">{{ error }}</span>
+                {% endfor %}
+            </p>
+            <p>{{ form_password.submit_password() }}</p>
+        </form>
+        <p><a href="{{ url_for('logout') }}">Logout</a></p>
+    </body>
+</html>

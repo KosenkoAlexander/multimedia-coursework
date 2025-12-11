@@ -5,13 +5,42 @@
     </head>
     <body>
         Hello user
-        <a href="{{ url_for('index') }}">Profile</a>
+        <a href="{{ url_for('profile') }}">Profile</a>
         <a href="{{ url_for('index') }}">Settings</a>
         <form id="mainForm", action="{{ url_for('start') }}" method="post" novalidate>
             {{ form.hidden_tag() }}
             {{ form.start() }}
         </form>
         <p id="responseText">Press the button!</p>
+        {% if paginated %}
+        <p>
+        <table>
+            <thead><tr>
+                {% for h in paginated.header %}
+                <th>{{ h }}</th>
+                {% endfor %}
+            </tr></thead>
+            <tbody>
+                {% for row in paginated.get_current_items() %}
+                <tr>
+                    {% for cell in row %}
+                    <td>{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </p>
+        <p>
+        Page {{ paginated.page+1 }} / {{ paginated.pages }}<br>
+        {% if paginated.next_page_num() is not none %}
+        <a href="{{ url_for('index', page=paginated.next_page_num()) }}">Next</a>
+        {% endif %}
+        {% if paginated.prev_page_num() is not none %}
+        <a href="{{ url_for('index', page=paginated.prev_page_num()) }}">Prev</a>
+        {% endif %}
+        </p>
+        {% endif %}
         <script>
             const mainForm = document.getElementById('mainForm');
             const responseText = document.getElementById('responseText')

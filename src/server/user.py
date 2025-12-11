@@ -8,6 +8,7 @@ class User(UserMixin):
         self.username = username
         self.email = email
         self.password_hash =password_hash
+        self.paginated = None
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
