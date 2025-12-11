@@ -23,22 +23,22 @@ function sanity_check() {
 
 const loader = new GLTFLoader();
 let mixer;
-let mesh;
 loader.load('static/LabX.glb', function (gltf) {
     let gl_scene = gltf.scene; scene.add(gl_scene); // console.log(gl_scene);
-    mesh = gl_scene["children"][0]; // console.log(mesh);
-    mesh['morphTargetInfluences']['0'] = 1;
+    const mesh = gl_scene["children"][0]; // console.log(mesh);
+    // mesh['morphTargetInfluences']['0'] = 1;
 
     const trackname = '.morphTargetInfluences[0]';
     const half_yap_sec = 0.2;
-    const morphTrack = new THREE.NumberKeyframeTrack(trackname, [0, half_yap_sec], [1, 0]);
+    const morphTrack = new THREE.NumberKeyframeTrack(trackname, [0, half_yap_sec, 2 * half_yap_sec], [1, 0, 1]);
     const clip = new THREE.AnimationClip('morph', -1, [morphTrack]);
     mixer = new THREE.AnimationMixer(mesh);
 
     const action = mixer.clipAction(clip);
 
-    action.setLoop(THREE.LoopPingPong);
+    action.setLoop(THREE.LoopRepeat);
     action.play();
+    mixer.setTime(0);
 },
     undefined, function (error) { console.error(error); }
 );
@@ -65,7 +65,7 @@ animate();
 function toggle_play() {
     play = !play;
     if (!play) {
-        mesh['morphTargetInfluences']['0'] = 1;
+        mixer.setTime(0);
     }
 }
 
