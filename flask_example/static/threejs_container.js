@@ -10,7 +10,6 @@ const camera = new THREE.PerspectiveCamera(50, cw / ch, 0.1, 10);
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(cw, ch);
-renderer.setAnimationLoop(animate);
 threejs_container.appendChild(renderer.domElement);
 
 const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -35,11 +34,19 @@ scene.add(dir_light);
 
 camera.position.z = 5;
 
+let play = false;
 function animate() {
-
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-
+    window.requestAnimationFrame(animate);
+    if (play) {
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+    }
     renderer.render(scene, camera);
-
 }
+animate();
+
+function toggle_play() {
+    play = !play;
+}
+
+export { toggle_play }

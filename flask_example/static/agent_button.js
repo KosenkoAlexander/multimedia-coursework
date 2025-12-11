@@ -1,8 +1,10 @@
+import { toggle_play } from "./threejs_container.js";
+
 const recordButton = document.getElementById('agent_button');
 const statusDisplay = document.getElementById('status');
 let recognition;
 let finalTranscript = '';
-let speechSynthesisUtterance;
+let utterance;
 
 if ('webkitSpeechRecognition' in window) {
     statusDisplay.textContent = 'Ready.';
@@ -31,6 +33,7 @@ if ('webkitSpeechRecognition' in window) {
 
     recognition.onend = () => {
         statusDisplay.textContent = 'Processing...';
+        finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
         if (finalTranscript) {
             setTimeout(() => {
                 statusDisplay.textContent = `You said: "${finalTranscript}"`;
@@ -56,10 +59,15 @@ if ('webkitSpeechRecognition' in window) {
 
 function speakText(text) {
     if ('speechSynthesis' in window) {
-        speechSynthesisUtterance = new SpeechSynthesisUtterance(text);
-        speechSynthesisUtterance.lang = 'en-US';
-        speechSynthesis.speak(speechSynthesisUtterance);
-        speechSynthesisUtterance.onend = () => {
+        utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        speechSynthesis.speak(utterance);
+
+        utterance.onstart = () => {
+            toggle_play();
+        };
+        utterance.onend = (event) => {
+            toggle_play();
             statusDisplay.textContent = 'Ready.';
         };
     } else {
