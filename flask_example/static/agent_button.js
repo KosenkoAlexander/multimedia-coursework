@@ -1,4 +1,5 @@
-import { toggleMouth, agentApi, AGENTAPI } from "./threejs_container.js";
+import { agentApi, AGENTAPI } from "./threejs_container.js";
+import { speakText } from "./speakText.js";
 
 const recordButton = document.getElementById('agent_button');
 const statusDisplay = document.getElementById('status');
@@ -32,14 +33,16 @@ if ('webkitSpeechRecognition' in window) {
     };
 
     recognition.onend = () => {
-        statusDisplay.textContent = 'Answer in progres...'; // finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
+        statusDisplay.textContent = 'Answer in progres...';
+        // finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
+        // console.log(finalTranscript);
         if (finalTranscript) {
-            // console.log(finalTranscript);
             setTimeout(() => {
                 statusDisplay.textContent = "Ready.";
             }, 5 * 1000);
             // TODO process finalTranscript
             // make request to python api here!!!
+            speakText("Whatever is returned from the backend");
         } else {
             agentApi[AGENTAPI.NO]();  // TODO Listen-Idle transition too snappy because of No
             statusDisplay.textContent = 'No speech detected.';

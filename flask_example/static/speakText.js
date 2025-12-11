@@ -1,3 +1,5 @@
+import { toggleMouth } from "./threejs_container.js";
+
 const statusDisplay = document.getElementById('status');
 let utterance;
 
