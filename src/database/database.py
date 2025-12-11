@@ -157,6 +157,27 @@ class DatabaseConnector:
             cur.execute(query, (specialties,))
             return cur.fetchall()
 
+    def find_user_by_id(self, id): #these 3 user finding methods must return tuple (id, username, email, password_hash, is_admin) if user exists else None
+        pass #TODO
+
+    def find_user_by_username(self, username):
+        pass #TODO
+
+    def find_user_by_email(self, email):
+        pass #TODO
+
+    def add_user(self, username, email, password_hash, is_admin = False):
+        pass #TODO
+
+    def change_user_username(self, id, new_username):
+        pass #TODO
+
+    def change_user_password_hash(self, id, new_password_hash):
+        pass #TODO
+
+    def change_user_is_admin(self, id):
+        pass #TODO
+
 
 # TEST
 if __name__ == '__main__':
