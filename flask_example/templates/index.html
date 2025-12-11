@@ -23,8 +23,10 @@
     <div style="display:flex; flex-direction: column; width: 300px; height: 500px;">
         <div id="threejs_container" style="flex-grow: 1;"></div>
         <button id="agent_button">Press and hold to speak</button>
+        <p id="status"></p>
     </div>
 </body>
-<script type="module" src="{{ url_for('static', filename='main.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
+<script src="{{ url_for('static', filename='agent_button.js' )}}"></script>
 
 </html>
