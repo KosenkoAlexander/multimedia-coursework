@@ -12,16 +12,33 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(cw, ch);
 threejs_container.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(geometry, material);
-cube.position.y = -1;
-scene.add(cube);
+function sanity_check() {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    cube.position.y = -1;
+    scene.add(cube);
+}
+// sanity_check()
 
 const loader = new GLTFLoader();
-let ladybug;
-loader.load('static/scene.gltf', function (gltf) {
-    ladybug = gltf.scene; ladybug.scale.set(50, 50, 50); ladybug.rotation.x = 1; scene.add(ladybug);
+let mixer;
+let mesh;
+loader.load('static/LabX.glb', function (gltf) {
+    let gl_scene = gltf.scene; scene.add(gl_scene); // console.log(gl_scene);
+    mesh = gl_scene["children"][0]; // console.log(mesh);
+    mesh['morphTargetInfluences']['0'] = 1;
+
+    const trackname = '.morphTargetInfluences[0]';
+    const half_yap_sec = 0.2;
+    const morphTrack = new THREE.NumberKeyframeTrack(trackname, [0, half_yap_sec], [1, 0]);
+    const clip = new THREE.AnimationClip('morph', -1, [morphTrack]);
+    mixer = new THREE.AnimationMixer(mesh);
+
+    const action = mixer.clipAction(clip);
+
+    action.setLoop(THREE.LoopPingPong);
+    action.play();
 },
     undefined, function (error) { console.error(error); }
 );
@@ -35,11 +52,11 @@ scene.add(dir_light);
 camera.position.z = 5;
 
 let play = false;
+const clock = new THREE.Clock();
 function animate() {
     window.requestAnimationFrame(animate);
     if (play) {
-        cube.rotation.x += 0.01;
-        cube.rotation.y += 0.01;
+        mixer.update(clock.getDelta());
     }
     renderer.render(scene, camera);
 }
@@ -47,6 +64,9 @@ animate();
 
 function toggle_play() {
     play = !play;
+    if (!play) {
+        mesh['morphTargetInfluences']['0'] = 1;
+    }
 }
 
 export { toggle_play }
