@@ -1,13 +1,17 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const threejs_container = document.getElementById('threejs_container');
+const cw = threejs_container.getBoundingClientRect().width;
+const ch = threejs_container.getBoundingClientRect().height;
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(50, cw / ch, 0.1, 10);
 
 const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(cw, ch);
 renderer.setAnimationLoop(animate);
-document.body.appendChild(renderer.domElement);
+threejs_container.appendChild(renderer.domElement);
 
 const geometry = new THREE.BoxGeometry(1, 1, 1);
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -23,6 +27,7 @@ loader.load('static/scene.gltf', function (gltf) {
     undefined, function (error) { console.error(error); }
 );
 
+scene.background = new THREE.Color(0x8ebfde);
 scene.add(new THREE.AmbientLight(0xffffff, 1));
 const dir_light = new THREE.DirectionalLight(0xffffff, 2);
 dir_light.position.set(10, 10, 5);
