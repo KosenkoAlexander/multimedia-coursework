@@ -69,10 +69,10 @@ class DatabaseConnector:
             cur.execute(query, (genres,))
             return [row[0] for row in cur.fetchall()]
 
-    def search_books_by_genres_or_authors(self, genres, authors): # return books that correspond to genres OR authors (so it may have wrong genres or wrong authors but not both), return as tuple (book, authors_list, genres_list)
+    def search_books_by_genres_or_authors(self, genres, authors): #TODO return books that correspond to genres OR authors (so it may have wrong genres or wrong authors but not both), return as tuple (book, authors_list, genres_list)
         pass
 
-    def search_libraries_with_book(self, book_name):
+    def search_libraries_with_book(self, book_name): #TODO add link as 4th tuple element (None if it is NULL in table (if book is in paper))
         if not self.conn: return []
         query = """
                 SELECT l.name, l.address, bl.available
@@ -106,7 +106,7 @@ class DatabaseConnector:
 
             return (book_real_name, authors, genres)
 
-    def search_shops_with_book(self, book_name):
+    def search_shops_with_book(self, book_name): #TODO add link as 4th tuple element (None if it is NULL in table (if book is in paper))
         if not self.conn: return []
         query = """
                 SELECT s.name, s.address, bs.price
