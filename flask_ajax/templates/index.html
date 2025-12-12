@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Filter Table</title>
+</head>
+
+<body>
+    <h2>Filter Table by City</h2>
+
+    <input type="text" id="cityInput" placeholder="Enter city">
+    <button onclick="filter()">Filter</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>City</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            {% include "table_rows.html" %}
+        </tbody>
+    </table>
+
+    <script>
+        function filter() {
+            const city = document.getElementById("cityInput").value;
+
+            fetch(`/filter?city=${encodeURIComponent(city)}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById("tableBody").innerHTML = html;
+                });
+        }
+    </script>
+
+</body>
+
+</html>
