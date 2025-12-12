@@ -1,0 +1,10 @@
+{% for row in rows %}
+<tr>
+    <td>{{ row.name }}</td>
+    <td>{{ row.city }}</td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="2">No results</td>
+</tr>
+{% endfor %}
