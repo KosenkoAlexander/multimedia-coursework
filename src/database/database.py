@@ -69,18 +69,51 @@ class DatabaseConnector:
             cur.execute(query, (genres,))
             return [row[0] for row in cur.fetchall()]
 
-    def search_books_by_genres_or_authors(self, genres, authors): #TODO return books that correspond to genres OR authors (so it may have wrong genres or wrong authors but not both), return as tuple (book, authors_list, genres_list)
-        pass
+    def search_books_by_genres_or_authors(self, genres, authors):
 
-    def search_libraries_with_book(self, book_name): #TODO add link as 4th tuple element (None if it is NULL in table (if book is in paper))
-        if not self.conn: return []
+        if not self.conn:
+            return []
+
+        if isinstance(genres, str): genres = [genres]
+        if isinstance(authors, str): authors = [authors]
+
         query = """
-                SELECT l.name, l.address, bl.available
+                SELECT b.name, \
+                       ARRAY_AGG(DISTINCT a.name || ' ' || a.surname) as authors_list, \
+                       ARRAY_AGG(DISTINCT g.name)                     as genres_list
+                FROM book b
+                         LEFT JOIN book_author ba ON b.id = ba.book
+                         LEFT JOIN author a ON ba.author = a.id
+                         LEFT JOIN book_genre bg ON b.id = bg.book
+                         LEFT JOIN genre g ON bg.genre = g.id
+                GROUP BY b.id, b.name
+                HAVING
+                -- Оператор && перевіряє, чи є перетин між масивами (чи є спільні елементи)
+                    ARRAY_AGG(g.name)::varchar[] && %s:: varchar []
+                    OR
+                    ARRAY_AGG(a.surname):: varchar [] && %s:: varchar [] \
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (genres, authors))
+            return cur.fetchall()
+
+    def search_libraries_with_book(self, book_name):
+
+        if not self.conn:
+            return []
+
+        query = """
+                SELECT l.name, \
+                       l.address, \
+                       bl.available, \
+                       bl.link
                 FROM libraries l
                          JOIN book_library bl ON l.id = bl.library
                          JOIN book b ON b.id = bl.book
                 WHERE b.name ILIKE %s \
                 """
+
         with self.conn.cursor() as cur:
             cur.execute(query, (book_name,))
             return cur.fetchall()
@@ -106,18 +139,22 @@ class DatabaseConnector:
 
             return (book_real_name, authors, genres)
 
-    def search_shops_with_book(self, book_name): #TODO add link as 4th tuple element (None if it is NULL in table (if book is in paper))
+    def search_shops_with_book(self, book_name):
         if not self.conn: return []
+
+
         query = """
-                SELECT s.name, s.address, bs.price
+                SELECT s.name, s.address, bs.price, bs.link
                 FROM shops s
                          JOIN book_shop bs ON s.id = bs.shop
                          JOIN book b ON b.id = bs.book
                 WHERE b.name ILIKE %s \
                 """
+
         with self.conn.cursor() as cur:
             cur.execute(query, (book_name,))
-            return [(row[0], row[1], float(row[2])) for row in cur.fetchall()]
+            # row[0] - name, row[1] - address, row[2] - price, row[3] - link
+            return [(row[0], row[1], float(row[2]), row[3]) for row in cur.fetchall()]
 
     def get_genre_list(self):
         if not self.conn: return []
@@ -157,32 +194,113 @@ class DatabaseConnector:
             cur.execute(query, (specialties,))
             return cur.fetchall()
 
-    def find_user_by_id(self, id): #these 3 user finding methods must return tuple (id, username, email, password_hash, is_admin) if user exists else None
-        pass #TODO
+    def find_user_by_id(self, id):
+        # Повертає tuple (id, username, email, password_hash, is_admin) або None
+        if not self.conn: return None
+
+        query = """
+                SELECT id, username, email, password_hash, is_admin
+                FROM users
+                WHERE id = %s \
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (id,))
+            return cur.fetchone()
 
     def find_user_by_username(self, username):
-        pass #TODO
+        if not self.conn: return None
+
+        query = """
+                SELECT id, username, email, password_hash, is_admin
+                FROM users
+                WHERE username = %s \
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (username,))
+            return cur.fetchone()
 
     def find_user_by_email(self, email):
-        pass #TODO
+        if not self.conn: return None
 
-    def add_user(self, username, email, password_hash, is_admin = False):
-        pass #TODO
+        query = """
+                SELECT id, username, email, password_hash, is_admin
+                FROM users
+                WHERE email = %s \
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (email,))
+            return cur.fetchone()
+
+    def add_user(self, username, email, password_hash, is_admin=False):
+        """
+        Додає користувача та повертає його ID.
+        """
+        if not self.conn: return None
+
+        query = """
+                INSERT INTO users (username, email, password_hash, is_admin)
+                VALUES (%s, %s, %s, %s) RETURNING id \
+                """
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (username, email, password_hash, is_admin))
+                new_id = cur.fetchone()[0]
+                self.conn.commit()  # Зберігаємо зміни
+                return new_id
+        except Exception as e:
+            self.conn.rollback()  # Відкочуємо, якщо сталася помилка (наприклад, такий email вже існує)
+            print(f"Error adding user: {e}")
+            return None
 
     def change_user_username(self, id, new_username):
-        pass #TODO
+        if not self.conn: return
+
+        query = "UPDATE users SET username = %s WHERE id = %s"
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (new_username, id))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error changing username: {e}")
 
     def change_user_password_hash(self, id, new_password_hash):
-        pass #TODO
+        if not self.conn: return
+
+        query = "UPDATE users SET password_hash = %s WHERE id = %s"
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (new_password_hash, id))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error changing password: {e}")
 
     def change_user_is_admin(self, id):
-        pass #TODO
+
+        if not self.conn: return
+
+        query = "UPDATE users SET is_admin = NOT is_admin WHERE id = %s"
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (id,))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error toggling admin status: {e}")
 
 
 # TEST
 if __name__ == '__main__':
 
-    DB_NAME = "postgres"
+    DB_NAME = "course work"
     USER = "postgres"
     PASSWORD = "postgres"
     HOST = "localhost"
@@ -265,6 +383,71 @@ if __name__ == '__main__':
         specialty_shops = db.get_shops_by_specialties(["Foreign Literature"])
         for shop in specialty_shops:
             print(f"   - {shop[0]} ({shop[1]})")
+
+        # Test 10
+        books = db.search_books_by_genres_or_authors(["Physics"], ["Turing", "King"])
+        for book in books:
+            print(f" [10] Книга: {book[0]}")
+            print(f"Автори: {book[1]}")
+            print(f"Жанри: {book[2]}")
+            print("-" * 20)
+
+        # Test 11
+        libs = db.search_libraries_with_book("Clean Code")
+        for lib in libs:
+            name, address, available, link = lib
+            print(f" [11]  Бібліотека: {name}, Доступна: {available}")
+            if link:
+                print(f"Читати онлайн: {link}")
+            else:
+                print("Тільки паперова версія")
+
+        # Test 12
+        print("\n--- 12. ТЕСТ ПОШУКУ КНИГ (Жанр 'Physics' або автор 'Knuth') ---")
+        books = db.search_books_by_genres_or_authors(["Physics"], ["Knuth"])
+        for b in books:
+            print(f" Назва: {b[0]} | Автори: {b[1]} | Жанри: {b[2]}")
+
+        print("\n--- 13. ТЕСТ БІБЛІОТЕК (Книга 'Clean Code') ---")
+        libs = db.search_libraries_with_book("Clean Code")
+        for l in libs:
+            status = "Доступна" if l[2] else "Зайнята"
+            link = l[3] if l[3] else "Тільки фізична копія"
+            print(f" {l[0]} ({l[1]}) -> {status} | Link: {link}")
+
+        print("\n--- 14. ТЕСТ МАГАЗИНІВ (Книга 'A Brief History of Time') ---")
+        shops = db.search_shops_with_book("A Brief History of Time")
+        for s in shops:
+            link = s[3] if s[3] else "Купівля в магазині"
+            print(f" {s[0]} -> {s[2]}$ | Link: {link}")
+
+        print("\n--- 15. ТЕСТ КОРИСТУВАЧІВ ---")
+        # Додаємо тестового юзера
+        test_username = "test_student"
+        test_email = "student@university.com"
+        user_id = db.add_user(test_username, test_email, "hashed_secret_123")
+
+        if user_id:
+            print(f"16 Користувача створено з ID: {user_id}")
+
+            # Перевірка пошуку
+            u = db.find_user_by_id(user_id)
+            print(f" Знайдено по ID: {u[1]} (Admin: {u[4]})")
+
+            # Зміна імені
+            print("Змінюємо username на 'super_student'...")
+            db.change_user_username(user_id, "super_student")
+            u = db.find_user_by_username("super_student")
+            print(f"   Нове ім'я в БД: {u[1] if u else 'Error'}")
+
+            # Зміна прав адміна
+            print(" Робимо адміном...")
+            db.change_user_is_admin(user_id)
+            u = db.find_user_by_id(user_id)
+            print(f"   Тепер Admin: {u[4]}")
+
+        else:
+            print(" Не вдалося створити користувача (можливо, такий email/username вже існує).")
 
         print("\n" + "="*60)
         print(" Tests finished.")
