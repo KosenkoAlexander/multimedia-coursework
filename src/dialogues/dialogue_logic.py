@@ -26,29 +26,30 @@ EmotionString = {Emotion.IDLE:'Idle',
                  Emotion.ASK:'Ask'}
 
 class DialogueProcessor:
-    def format_as_dict(self, text=None, emotion=None, table_header=None, table_body=None):
-        return {'text':text, 'emotion':EmotionString[emotion] if emotion in EmotionString else EmotionString[Emotion.TALK], 'table_header':table_header, 'table_body':table_body}
+    def format_as_dict(self, text=None, emotion=None, table_header=None, table_body=None, hints=None):#if hints are none they are autoloaded for current processor, else you can specify custom, IDK why
+        return {'text':text, 'emotion':EmotionString[emotion] if emotion in EmotionString else EmotionString[Emotion.TALK], 'table_header':table_header, 'table_body':table_body, 'hints':hints if hints else (self.processor_hints[self.current_processor] if self.current_processor in self.processor_hints else None)}
 
     def process_initial(self, text):
         text_l = text.lower()
         words = re.findall(word_regex, text_l)
         default_reply = 'Hello, how can I assist you? Say help for a quick tutorial. If you have problems with speech input, check a checkbox to switch to text'
-        default_table_h = ['Basic dialogue options']
-        default_table_b = [['Find [genres] book [authored by] [name is]'],
-                           ['Find library'],
-                           ['Find shop'],
-                           ['List genres'],
-                           ['List specialties'],
-                           ['... and so on']]
+        #default_table_h = ['Basic dialogue options']
+        #default_table_b = [['Find [genres] book [authored by] [name is]'],
+        #                   ['Find library'],
+        #                   ['Find shop'],
+        #                   ['List genres'],
+        #                   ['List specialties'],
+        #                   ['... and so on']]
+        #default_hints = ['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] libraries', 'Find [<specialties>] shops', 'List genres', 'List specialties', '... and similar']
         if not self.database_connector:
             default_reply += ' Unfortunately my database is not connected, so I have limited knowledge'
         if len(words)==0:
-            return self.format_as_dict(default_reply, Emotion.TALK, default_table_h, default_table_b)
+            return self.format_as_dict(default_reply, Emotion.TALK)
         hello_detected = False
         for w in hello_words:
             if w in words:
                 if len(words) == 1:
-                    return self.format_as_dict(default_reply, Emotion.TALK, default_table_h, default_table_b)
+                    return self.format_as_dict(default_reply, Emotion.TALK)
                 hello_detected = True
                 break
         # add more hello extensions later
@@ -56,6 +57,7 @@ class DialogueProcessor:
         
     def process_default(self, text):
         text_l = text.lower()
+        #default_hints = ['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] libraries', 'Find [<specialties>] shops', 'List genres', 'List specialties', '... and similar']
         if re.match('goodbye.*', text_l):
             self.goodbye = True
             return self.format_as_dict('Goodbye', Emotion.TELL)
@@ -315,6 +317,13 @@ class DialogueProcessor:
         self.book_specifiers = []
         self.current_authors = []
         self.max_told_items = max_told_items
+        self.processor_hints = {self.process_initial:['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] library', 'Find [<specialties>] shop', 'List genres', 'List specialties'],
+                                self.process_default:['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] library', 'Find [<specialties>] shop', 'List genres', 'List specialties'],
+                                self.process_find_book:['Author is <name and/or surname>','Genres are <genres>','Name is <name>', 'Cancel'],
+                                self.process_find_library:['<specialties>', 'Cancel'],
+                                self.process_find_shop:['<specialties>', 'Cancel'],
+                                self.process_after_book_found:['In libraries', 'In shops', 'Yes', 'In libraries and shops', 'No'],
+                                self.process_clarify_authors:['<name and/or surname>']}
 
     def process_user_text(self, text):
         self.history.append((text, datetime.datetime.now))
