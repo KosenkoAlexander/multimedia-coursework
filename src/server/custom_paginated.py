@@ -34,4 +34,4 @@ class CustomPaginated:
 
     @staticmethod
     def from_dict(d):
-        return CustomPaginated(d['header'], d['rows'], d['per_page'], d['page'])
+        return CustomPaginated(d['header'], d['rows'], d['per_page'], d['page']) if d is not None else None

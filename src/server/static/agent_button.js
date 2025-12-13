@@ -6,6 +6,37 @@ const statusDisplay = document.getElementById('status');
 let recognition;
 let finalTranscript = '';
 
+const speechReplacement = document.getElementById('speechReplacement');
+
+
+function processTranscript(transcript){
+    statusDisplay.textContent = transcript;
+    fetch("/agent", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+            'text':transcript
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            statusDisplay.textContent = data.text;
+            speakText(finalTranscript);
+            // something with data.emotion
+            return data.table;
+        })
+        .then(html => {
+            document.getElementById("tableSpan").innerHTML = html;
+        });
+}
+
+speechReplacement.addEventListener('keypress', function(event){
+    if (event.key === 'Enter'){
+        const transcript = speechReplacement.value;
+        processTranscript(transcript);
+    }
+});
+
 if ('webkitSpeechRecognition' in window) {
     statusDisplay.textContent = 'Ready.';
     recognition = new webkitSpeechRecognition();
@@ -44,8 +75,9 @@ if ('webkitSpeechRecognition' in window) {
             //}, 5 * 1000);
             // TODO process finalTranscript
             // make request to python api here!!!
-            statusDisplay.textContent = finalTranscript;
-            speakText(finalTranscript);
+            //statusDisplay.textContent = finalTranscript;
+            //speakText(finalTranscript);
+            processTranscript(finalTranscript);
         } else {
             agentApi[AGENTAPI.NO]();  // TODO Listen-Idle transition too snappy because of No
             statusDisplay.textContent = 'No speech detected.';

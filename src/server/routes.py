@@ -83,9 +83,9 @@ def agent():
         text = data.get('text')
         if text:
             result = dummy_dialogue_processor.process_user_text(text)
-            result_paginated = CustomPaginated(result['table']) if result['table'] else None
-            dummy_paginated = result_paginated.to_dict()
-            return jsonify({'text':result['text'], 'emotion':result['emotion'], 'table':render_template('table.html', paginated=result_paginated)})
+            result_paginated = CustomPaginated(result['table_header'], result['table_body'], 10) if 'table_header' in result and 'table_body' in result and result['table_body'] is not None else None
+            session['paginated'] = result_paginated.to_dict() if result_paginated else None
+            return jsonify({'text':result['text'], 'emotion':result['emotion'], 'table':render_template('table.html', paginated=result_paginated)}), 200
         else:
             return jsonify({'status':'error', 'message':'Expected "text" key in JSON'}), 400
     else:
