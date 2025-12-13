@@ -128,8 +128,8 @@
 
         function createGUI(model, animations) {
 
-            const states = ['Idle', 'Think', 'Listen'];
-            const emotes = ['Yes', 'No'];
+            const states = ['Idle', 'Think', 'Wait', 'Listen', 'Talk', 'Tell'];
+            const emotes = ['Yes', 'No', 'Ask'];
 
             gui = new GUI();
 
@@ -143,7 +143,7 @@
                 const action = mixer.clipAction(clip);
                 actions[clip.name] = action;
 
-                if (emotes.indexOf(clip.name) >= 0 || states.indexOf(clip.name) >= 2) {
+                if (emotes.indexOf(clip.name) >= 0) {// || states.indexOf(clip.name) >= 2) {
 
                     action.clampWhenFinished = true;
                     action.loop = THREE.LoopOnce;
