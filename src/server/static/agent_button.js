@@ -105,7 +105,7 @@ let utterance;
 function speakText(text, emotion = "Talk") {
     const new_state = Object.keys(agentApi).includes(emotion) ? emotion : AGENTAPI.TALK;
     // console.log(new_state);
-    if ('speechSynthesis' in window & false) {
+    if ('speechSynthesis' in window) {
         utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
         speechSynthesis.speak(utterance);
