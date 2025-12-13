@@ -1,28 +1,26 @@
 import { agentApi, AGENTAPI } from "./threejs_container.js";
-import { speakText } from "./speakText.js";
 
 const recordButton = document.getElementById('agent_button');
-const statusDisplay = document.getElementById('status');
+const agentOutputText = document.getElementById('status');
 let recognition;
 let finalTranscript = '';
 
-const speechReplacement = document.getElementById('speechReplacement');
+const userInputText = document.getElementById('user_input');
 
 
-function processTranscript(transcript){
-    statusDisplay.textContent = transcript;
+function processTranscript(transcript) {
+    userInputText.textContent = transcript;
     fetch("/agent", {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            'text':transcript
+            'text': transcript
         })
     })
         .then(response => response.json())
         .then(data => {
-            statusDisplay.textContent = data.text;
-            speakText(finalTranscript);
-            // something with data.emotion
+            agentOutputText.textContent = data.text;
+            speakText(data.text, data.emotion);
             return data.table;
         })
         .then(html => {
@@ -30,23 +28,26 @@ function processTranscript(transcript){
         });
 }
 
-speechReplacement.addEventListener('keypress', function(event){
-    if (event.key === 'Enter'){
-        const transcript = speechReplacement.value;
+userInputText.addEventListener('keypress', function (event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        const transcript = userInputText.value;
         processTranscript(transcript);
     }
 });
 
-if ('webkitSpeechRecognition' in window) {
-    statusDisplay.textContent = 'Ready.';
-    recognition = new webkitSpeechRecognition();
-    //recognition.processLocally = true;
+const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition) {
+    agentOutputText.textContent = 'Ready.';
+    recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
-        statusDisplay.textContent = 'Listening...';
+        agentOutputText.textContent = 'Listening...';
         finalTranscript = ''; // Reset transcript on new recording
     };
 
@@ -61,26 +62,18 @@ if ('webkitSpeechRecognition' in window) {
     recognition.onerror = (event) => {
         agentApi[AGENTAPI.NO]();
         console.error('Speech recognition error:', event.error);
-        statusDisplay.textContent = `Error: ${event.error}`;
+        agentOutputText.textContent = `Error: ${event.error}`;
     };
 
     recognition.onend = () => {
-        statusDisplay.textContent = 'Answer in progres...';
+        agentOutputText.textContent = 'Answer in progres...';
         // finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
         // console.log(finalTranscript);
-        finalTranscript = document.getElementById('speechReplacement').value //TODO remove!
         if (finalTranscript) {
-            //setTimeout(() => {
-            //    statusDisplay.textContent = "Ready.";
-            //}, 5 * 1000);
-            // TODO process finalTranscript
-            // make request to python api here!!!
-            //statusDisplay.textContent = finalTranscript;
-            //speakText(finalTranscript);
             processTranscript(finalTranscript);
         } else {
-            agentApi[AGENTAPI.NO]();  // TODO Listen-Idle transition too snappy because of No
-            statusDisplay.textContent = 'No speech detected.';
+            agentApi[AGENTAPI.NO]();
+            agentOutputText.textContent = 'No speech detected.';
         }
     };
 
@@ -89,12 +82,44 @@ if ('webkitSpeechRecognition' in window) {
         recognition.start();
     });
 
-    recordButton.addEventListener('mouseup', () => {
-        agentApi[AGENTAPI.IDLE]();
+    // recordButton.addEventListener('mouseup', () => {
+    //     agentApi[AGENTAPI.THINK]();
+    //     recognition.stop();
+    // });
+    recognition.onspeechend = () => {
+        agentApi[AGENTAPI.THINK]();
         recognition.stop();
-    });
+    };
 
 } else {
-    statusDisplay.textContent = 'Web Speech API is not supported in this browser.';
+    agentOutputText.textContent = 'Web Speech API is not supported in this browser.';
     recordButton.disabled = true;
+    document.getElementById("user_input").readOnly = false;
+}
+
+
+
+import { toggleMouth } from "./threejs_container.js";
+let utterance;
+
+function speakText(text, emotion = "Talk") {
+    const new_state = Object.values(agentApi).includes(emotion) ? emotion : AGENTAPI.TALK;
+    if ('speechSynthesis' in window) {
+        utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        speechSynthesis.speak(utterance);
+
+        utterance.onstart = () => {
+            toggleMouth(new_state);  // TODO pass emotion
+        };
+        utterance.onend = () => {
+            toggleMouth();
+        };
+    } else {
+        toggleMouth();
+        setTimeout(() => {
+            toggleMouth();
+        }, text.length * 150);
+        // console.warn('Text-to-speech not supported in this browser.');
+    }
 }

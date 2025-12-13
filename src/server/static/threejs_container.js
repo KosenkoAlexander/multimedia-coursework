@@ -8,10 +8,14 @@ const api = { state: 'Idle' }
 
 const API = {
     IDLE: "Idle",
+    THINK: "Think",
+    WAIT: "Wait",
     LISTEN: "Listen",
-    TALK: "Think",
+    TALK: "Talk",
+    TELL: "Tell",
     YES: "Yes",
-    NO: "No"
+    NO: "No",
+    ASK: "Ask"
 };
 
 init()
@@ -74,8 +78,8 @@ function setMouthMixer(model) {
 }
 
 function createApi(model, animations) {
-    const states = ['Idle', 'Think', 'Listen'];
-    const emotes = ['Yes', 'No'];
+    const states = ['Idle', 'Think', 'Wait', 'Listen', 'Talk', 'Tell'];
+    const emotes = ['Yes', 'No', 'Ask'];
 
     mixer = new THREE.AnimationMixer(model);
 
@@ -87,7 +91,7 @@ function createApi(model, animations) {
         const action = mixer.clipAction(clip);
         actions[clip.name] = action;
 
-        if (emotes.indexOf(clip.name) >= 0 || states.indexOf(clip.name) >= 2) {
+        if (emotes.indexOf(clip.name) >= 0) {// || states.indexOf(clip.name) >= 2) {
 
             action.clampWhenFinished = true;
             action.loop = THREE.LoopOnce;
@@ -97,12 +101,14 @@ function createApi(model, animations) {
 
     }
 
+    const fade_sec = 0.5;
+
     // states
 
     for (let i = 0; i < states.length; i++) {
         const name = states[i];
         api[name] = function () {
-            fadeToAction(name, 0.5);
+            fadeToAction(name, fade_sec);
         }
     }
 
@@ -110,7 +116,9 @@ function createApi(model, animations) {
 
     function createEmoteCallback(name) {
         api[name] = function () {
-            fadeToAction(name, 0.2);
+            setTimeout(() => {
+                fadeToAction(name, 0.2);
+            }, 1000 * fade_sec);
             mixer.addEventListener('finished', restoreState);
         }
     }
@@ -118,12 +126,6 @@ function createApi(model, animations) {
         mixer.removeEventListener('finished', restoreState);
         fadeToAction(api.state, 0.2);
     }
-
-    // function createEmoteCallback(name) {
-    //     api[name] = function () {
-    //         playAction(actions[name], 0.2);
-    //     }
-    // }
 
     for (let i = 0; i < emotes.length; i++) {
         createEmoteCallback(emotes[i])
@@ -170,11 +172,11 @@ function animate() {
 
 }
 
-function toggleMouth() {
+function toggleMouth(new_state = API.TALK) {
     play = !play;
     mouthMixer.setTime(0);
     if (play) {
-        api[API.TALK]();
+        api[new_state]();
     }
     else {
         api[API.IDLE]();

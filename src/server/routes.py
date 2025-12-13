@@ -10,9 +10,10 @@ from server.custom_paginated import CustomPaginated
 @login_required
 def index():
     form = MainButtonsForm()
-    if 'paginated' not in session: #TODO delete this dummy paginated
+    if 'paginated' not in session or session['paginated'] is None: #TODO delete this dummy paginated
         session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
     paginated = CustomPaginated.from_dict(session['paginated'])
+    print(session['paginated'])
     return render_template('index.html', form=form, paginated=paginated, is_admin=current_user.is_admin)
 
 
