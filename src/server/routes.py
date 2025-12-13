@@ -13,7 +13,7 @@ def index():
     if 'paginated' not in session: #TODO delete this dummy paginated
         session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
     paginated = CustomPaginated.from_dict(session['paginated'])
-    return render_template('index.html', form=form, paginated=paginated)
+    return render_template('index.html', form=form, paginated=paginated, is_admin=current_user.is_admin)
 
 
 @app.route('/start', methods=['POST'])
@@ -107,3 +107,6 @@ def paginated_prev():
     paginated.set_page(paginated.prev_page_num())
     session['paginated'] = paginated.to_dict()
     return render_template('table.html', paginated=paginated)
+
+
+from server import routes_admin

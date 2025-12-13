@@ -9,6 +9,7 @@ class User(UserMixin):
         self.email = email
         self.password_hash =password_hash
         self.paginated = None
+        self.is_admin = is_admin
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -19,4 +20,4 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(id):
-    return User(0, 'test_username', 'test_email', generate_password_hash('pass')) #TODO replace with database call
+    return User(0, 'test_username', 'test_email', generate_password_hash('pass'), is_admin=True) #TODO replace with database call

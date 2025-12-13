@@ -4,15 +4,32 @@
         <title> Welcome! </title>
     </head>
     <body>
+        <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/"
+            }
+        }
+        </script>
         Hello user
         <a href="{{ url_for('profile') }}">Profile</a>
         <a href="{{ url_for('index') }}">Settings</a>
+        {% if is_admin %}
+        <a href="{{ url_for('admin') }}">Admin page</a>
+        {% endif %}
         <form id="mainForm", action="{{ url_for('start') }}" method="post" novalidate>
             {{ form.hidden_tag() }}
             {{ form.start() }}
         </form>
         <p id="responseText">Press the button!</p>
         <span id="tableSpan">{% include "table.html" %}</span>
+        <div style="display:flex; flex-direction: column; width: 300px; height: 500px;">
+            <div id="threejs_container" style="flex-grow: 1;"></div>
+            <p><input type="text" id="speechReplacement" placeholder="type here if speech problem"></p>
+            <button id="agent_button">Press and hold to speak</button>
+            <p id="status"></p>
+        </div>
         <script>
             const mainForm = document.getElementById('mainForm');
             const responseText = document.getElementById('responseText')
@@ -49,5 +66,7 @@
                     });
             }
         </script>
+<script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='agent_button.js' )}}"></script>
     </body>
 </html>
