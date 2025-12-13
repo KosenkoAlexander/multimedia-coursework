@@ -21,10 +21,11 @@ function processTranscript(transcript) {
         .then(data => {
             agentOutputText.textContent = data.text;
             speakText(data.text, data.emotion);
-            return data.table;
+            return [data.table, data.hints];
         })
-        .then(html => {
-            document.getElementById("tableSpan").innerHTML = html;
+        .then(htmls => {
+            document.getElementById("tableSpan").innerHTML = htmls[0];
+            document.getElementById("hintsDiv").innerHTML = htmls[1];
         });
 }
 
