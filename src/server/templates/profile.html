@@ -1,41 +1,210 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <title> Enter your account details: </title>
-    </head>
-    <body>
-        <p><a href="{{ url_for('index') }}">Back</a></p>
-        <form action="" method="post" novalidate>
-            {{ form_username.hidden_tag() }}
-            <p><h1>Change username</h1></p>
-            <p>
-                {{ form_username.username.label }}<br>
-                {{ form_username.username() }}
-                {% for error in form_username.username.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
-            <p>{{ form_username.submit_username() }}</p>
-        </form>
-        <form action="" method="post" novalidate>
-            {{ form_password.hidden_tag() }}
-            <p><h1>Change password</h1></p>
-            <p>
-                {{ form_password.password.label }}<br>
-                {{ form_password.password() }}
-                {% for error in form_password.password.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
-            <p>
-                {{ form_password.password2.label }}<br>
-                {{ form_password.password2() }}
-                {% for error in form_password.password2.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
-            <p>{{ form_password.submit_password() }}</p>
-        </form>
-        <p><a href="{{ url_for('logout') }}">Logout</a></p>
-    </body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    /* Global Centering */
+    .settings-wrapper {
+        display: flex;
+        justify-content: center; /* Center horizontally */
+        align-items: center; /* Center vertically */
+
+        /* Fixes for left alignment issue: */
+        width: 100%;
+        flex-grow: 1;
+
+        min-height: calc(100vh - 80px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    /* Settings Card */
+    .settings-container {
+        width: 100%;
+        max-width: 420px;
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 40px;
+        position: relative;
+    }
+
+    /* Header */
+    .header-row {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .header-row h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color, #2c3e50);
+        margin: 0 0 10px 0;
+    }
+
+    .back-link {
+        display: inline-block;
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover {
+        color: var(--accent-color, #3498db);
+    }
+
+    /* Sections */
+    .form-section {
+        margin-bottom: 25px;
+    }
+
+    .section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #95a5a6;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    /* Inputs */
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #ecf0f1;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #333;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    input:focus {
+        background-color: #fff;
+        border-color: var(--accent-color, #3498db);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    /* Error Messages */
+    .error-msg {
+        color: var(--danger, #e74c3c);
+        font-size: 0.85rem;
+        margin-top: 5px;
+        display: block;
+        text-align: left;
+    }
+
+    /* Buttons */
+    .btn {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--primary-color, #2c3e50);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.3s;
+    }
+
+    .btn:hover {
+        background-color: #34495e;
+        transform: translateY(-2px);
+    }
+
+    /* Divider */
+    hr.divider {
+        border: 0;
+        border-top: 1px solid #f0f0f0;
+        margin: 30px 0;
+    }
+
+    /* Logout */
+    .logout-container {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .logout-link {
+        font-size: 0.95rem;
+        color: var(--danger, #e74c3c);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 5px 10px;
+        border-radius: 5px;
+        transition: background 0.3s;
+    }
+
+    .logout-link:hover {
+        background-color: rgba(231, 76, 60, 0.1);
+    }
+
+</style>
+
+<div class="settings-wrapper">
+    <div class="settings-container">
+
+        <div class="header-row">
+            <h2>Profile Settings</h2>
+            <a href="{{ url_for('index') }}" class="back-link">← Back to Home</a>
+        </div>
+
+        <div class="form-section">
+            <div class="section-title">Change Username</div>
+            <form action="" method="post" novalidate>
+                {{ form_username.hidden_tag() }}
+
+                <div class="form-group">
+                    {{ form_username.username(placeholder="Enter new username") }}
+                    {% for error in form_username.username.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                {{ form_username.submit_username(class="btn", value="Save Username") }}
+            </form>
+        </div>
+
+        <hr class="divider">
+
+        <div class="form-section">
+            <div class="section-title">Security</div>
+            <form action="" method="post" novalidate>
+                {{ form_password.hidden_tag() }}
+
+                <div class="form-group">
+                    {{ form_password.password(placeholder="New Password") }}
+                    {% for error in form_password.password.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    {{ form_password.password2(placeholder="Confirm Password") }}
+                    {% for error in form_password.password2.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                {{ form_password.submit_password(class="btn", value="Update Password") }}
+            </form>
+        </div>
+
+        <div class="logout-container">
+            <a href="{{ url_for('logout') }}" class="logout-link">Log Out</a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

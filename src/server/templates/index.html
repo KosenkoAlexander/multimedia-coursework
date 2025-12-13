@@ -3,92 +3,316 @@
 {% block content %}
 
 <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/"
-            }
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@latest/examples/jsm/"
         }
-    </script>
-<script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
-<script type="module" src="{{ url_for('static', filename='agent_button.js' )}}"></script>
-
-
-{% if False %}
-<!-- test the backend with /start endpoint -->
-<form id="mainForm" , action="{{ url_for('start') }}" method="post" novalidate>
-    {{ form.hidden_tag() }}
-    {{ form.start() }}
-</form>
-<p id="responseText">Press the button!</p>
-{% endif %}
-
-<div style="width: 90vw; margin: 0 auto; display:flex; flex-direction: row; justify-content: space-between;">
-    <span id="tableSpan">{% include "table.html" %}</span>
-    <div style="display:flex; flex-direction: row;">
-        <div style="display:flex; flex-direction: column; width: 300px; height: 500px;">
-            <div id="threejs_container" style="flex-grow: 1;"></div>
-            <button id="agent_button">Click before speaking</button>
-            <label>
-                <input type="checkbox" , onclick="handleCheckbox(this)">
-                Use text input instead
-            </label>
-        </div>
-        <div style="display: flex; flex-direction:column">
-            <span>User input</span>
-            <textarea id="user_input" rows="10" cols="40" readonly></textarea>
-            <span>Agent output</span>
-            <textarea id="status" rows="10" cols="40"></textarea>
-        </div>
-    </div>
-</div>
-<div id="hintsDiv">
-    {% include "list.html"%}
-</div>
-<script>
-    {% if False %}
-    const mainForm = document.getElementById('mainForm');
-    const responseText = document.getElementById('responseText')
-    mainForm.addEventListener('submit', async (event) => {
-        event.preventDefault()
-        const formData = new FormData(mainForm)
-        try {
-            const response = await fetch('/start', { method: 'POST', body: formData });
-            if (response.ok) {
-                const result = await response.json();
-                responseText.textContent = 'Button pressed with no refresh!'
-                console.log('success:', result);
-            } else {
-                const error = await response.json();
-                console.error('response error:', error);
-            }
-        } catch (error) {
-            console.error('fetch error:', error);
-        }
-    });
-    {% endif %}
-
-    function prev_page() {
-        fetch("{{ url_for("paginated_prev") }}")
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById("tableSpan").innerHTML = html;
-            });
-    }
-    function next_page() {
-        fetch("{{ url_for("paginated_next") }}")
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById("tableSpan").innerHTML = html;
-            });
-    }
-    function handleCheckbox(checkbox) {
-        document.getElementById("user_input").readOnly = !checkbox.checked;
-        document.getElementById("agent_button").disabled = checkbox.checked;
     }
 </script>
 
+<script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='agent_button.js') }}"></script>
+
+<style>
+    /* Глобальний контейнер */
+    .dashboard-wrapper {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        padding: 20px;
+        height: calc(100vh - 60px); /* Висота екрану мінус хедер */
+        box-sizing: border-box;
+        background-color: var(--bg-light);
+
+        /* ВИПРАВЛЕННЯ: Розтягуємо на всю ширину */
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* ЗАГАЛЬНИЙ СТИЛЬ ДЛЯ КОЛОНОК (КАРТКИ) */
+    .dashboard-col {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        overflow: hidden; /* Ховаємо скроли, що вилазять */
+    }
+
+    /* --- ПРОПОРЦІЇ (40% - 35% - 25%) --- */
+    /* Використовуємо flex-basis та flex-grow для заповнення */
+
+    .col-table {
+        flex: 4; /* Пропорція 4 */
+        min-width: 350px;
+    }
+
+    .col-agent {
+        flex: 3.5; /* Пропорція 3.5 */
+        min-width: 300px;
+    }
+
+    .col-chat {
+        flex: 2.5; /* Пропорція 2.5 (трохи зменшив чат, щоб таблиці було більше місця) */
+        min-width: 250px;
+    }
+
+    /* --- ЗАГОЛОВКИ --- */
+    h3 {
+        margin: 0 0 15px 0;
+        font-size: 1.1rem;
+        color: var(--primary-color, #2c3e50);
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        text-align: center;
+    }
+
+    /* --- 1. ТАБЛИЦЯ (ЗЛІВА) --- */
+    .table-container {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .pagination-controls {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .pagination-btn {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+
+    .pagination-btn:hover {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+    }
 
 
+    /* --- 2. АГЕНТ (ЦЕНТР) --- */
+    .agent-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        gap: 15px;
+    }
+
+    .viewport-box {
+        flex: 1; /* Займає все вільне місце по висоті */
+        background-color: #f0f2f5;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        position: relative;
+        overflow: hidden;
+        min-height: 200px;
+    }
+
+    #threejs_container {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .controls-box {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    #agent_button {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--primary-color, #2c3e50);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    #agent_button:hover {
+        background-color: #34495e;
+        transform: translateY(-1px);
+    }
+
+    #agent_button:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: #555;
+        cursor: pointer;
+    }
+
+
+    /* --- 3. ЧАТ (СПРАВА) --- */
+    .chat-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        gap: 15px;
+    }
+
+    .chat-block {
+        display: flex;
+        flex-direction: column;
+        flex: 1; /* Рівномірно розтягує Input і Output */
+    }
+
+    .chat-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #95a5a6;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+
+    textarea {
+        width: 100%;
+        height: 100%;
+        padding: 12px;
+        border: 1px solid #eee;
+        background-color: #fafafa;
+        border-radius: 6px;
+        resize: none;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        background-color: white;
+    }
+
+    /* Підказки */
+    .hints-section {
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+        font-size: 0.85rem;
+    }
+
+    .hints-section summary {
+        color: #888;
+        cursor: pointer;
+        text-align: center;
+    }
+
+</style>
+
+<div class="dashboard-wrapper">
+
+    <div class="dashboard-col col-table">
+        <h3>📂 Data Overview</h3>
+
+        <div class="pagination-controls">
+            <button class="pagination-btn" onclick="prev_page()">← Prev</button>
+            <button class="pagination-btn" onclick="next_page()">Next →</button>
+        </div>
+
+        <div class="table-container">
+            <span id="tableSpan">
+                {% include "table.html" %}
+            </span>
+        </div>
+    </div>
+
+    <div class="dashboard-col col-agent">
+        <h3>🤖 AI Agent</h3>
+
+        <div class="agent-layout">
+            <div class="viewport-box">
+                <div id="threejs_container"></div>
+            </div>
+
+            <div class="controls-box">
+                <button id="agent_button">Click before speaking</button>
+                <label class="toggle-label">
+                    <input type="checkbox" onclick="handleCheckbox(this)">
+                    <span>Use Text Input</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-col col-chat">
+        <h3>💬 Communication</h3>
+
+        <div class="chat-layout">
+            <div class="chat-block">
+                <span class="chat-label">User Input</span>
+                <textarea id="user_input" readonly placeholder="Listening..."></textarea>
+            </div>
+
+            <div class="chat-block">
+                <span class="chat-label">Agent Output</span>
+                <textarea id="status" readonly placeholder="Agent response..."></textarea>
+            </div>
+
+            <div class="hints-section">
+                <details>
+                    <summary>Show Available Commands</summary>
+                    <div id="hintsDiv" style="margin-top: 10px; color: #555;">
+                        {% include "list.html" %}
+                    </div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function prev_page() {
+        fetch("{{ url_for('paginated_prev') }}")
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById("tableSpan").innerHTML = html;
+                });
+    }
+
+    function next_page() {
+        fetch("{{ url_for('paginated_next') }}")
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById("tableSpan").innerHTML = html;
+                });
+    }
+
+    function handleCheckbox(checkbox) {
+        const userInput = document.getElementById("user_input");
+        const agentBtn = document.getElementById("agent_button");
+
+        userInput.readOnly = !checkbox.checked;
+        agentBtn.disabled = checkbox.checked;
+
+        if (checkbox.checked) {
+            userInput.placeholder = "Type your command here...";
+            userInput.focus();
+            agentBtn.innerText = "Voice Mode Disabled";
+            agentBtn.style.opacity = "0.6";
+        } else {
+            userInput.placeholder = "Listening...";
+            agentBtn.innerText = "Click before speaking";
+            agentBtn.style.opacity = "1";
+        }
+    }
+</script>
 
 {% endblock %}

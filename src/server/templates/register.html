@@ -1,47 +1,187 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <title> Enter your account details: </title>
-    </head>
-    <body>
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .auth-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        flex-grow: 1;
+        min-height: calc(100vh - 80px);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .auth-container {
+        width: 100%;
+        max-width: 420px; /* Трохи ширша, бо полів більше */
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 40px;
+        text-align: center;
+    }
+
+    .auth-header h2 {
+        margin: 0 0 10px 0;
+        color: var(--primary-color, #2c3e50);
+        font-size: 1.8rem;
+    }
+
+    .auth-header p {
+        color: #7f8c8d;
+        margin: 0 0 25px 0;
+        font-size: 0.95rem;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #ecf0f1;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #333;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    input:focus {
+        background-color: #fff;
+        border-color: var(--accent-color, #3498db);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .btn {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--primary-color, #2c3e50);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.3s;
+        margin-top: 10px;
+    }
+
+    .btn:hover {
+        background-color: #34495e;
+        transform: translateY(-2px);
+    }
+
+    .error-msg {
+        color: var(--danger, #e74c3c);
+        font-size: 0.85rem;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .alert-box {
+        background-color: rgba(231, 76, 60, 0.1);
+        color: var(--danger, #e74c3c);
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+        border: 1px solid rgba(231, 76, 60, 0.2);
+    }
+
+    .login-link {
+        margin-top: 25px;
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+
+    .login-link a {
+        color: var(--accent-color, #3498db);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .login-link a:hover {
+        text-decoration: underline;
+    }
+
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-container">
+
+        <div class="auth-header">
+            <h2>Create Account</h2>
+            <p>Join our library system today</p>
+        </div>
+
         <form action="" method="post" novalidate>
             {{ form.hidden_tag() }}
-            <p>
-                {{ form.username.label }}<br>
-                {{ form.username() }}
-                {% for error in form.username.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
-            <p>
-                {{ form.email.label }}<br>
-                {{ form.email() }}
-                {% for error in form.email.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
-            <p>
-                {{ form.password.label }}<br>
-                {{ form.password() }}
-                {% for error in form.password.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
-            <p>
-                {{ form.password2.label }}<br>
-                {{ form.password2() }}
-                {% for error in form.password2.errors %}
-                <span style="color:red;">{{ error }}</span>
-                {% endfor %}
-            </p>
+
             {% if registration_error %}
-                <p>
-                    <span style="color:red;">{{ registration_error }}</span>
-                </p>
+            <div class="alert-box">
+                ⚠️ {{ registration_error }}
+            </div>
             {% endif %}
-            <p>
-                {{ form.submit() }}
-            </p>
+
+            <div class="form-group">
+                {{ form.username.label }}
+                {{ form.username(placeholder="Choose a username") }}
+                {% for error in form.username.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email(placeholder="Enter your email") }}
+                {% for error in form.email.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label }}
+                {{ form.password(placeholder="Create a password") }}
+                {% for error in form.password.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password2.label }}
+                {{ form.password2(placeholder="Confirm your password") }}
+                {% for error in form.password2.errors %}
+                <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            {{ form.submit(class="btn", value="Sign Up") }}
+
+            <div class="login-link">
+                Already have an account?
+                <a href="{{ url_for('login') }}">Log in</a>
+            </div>
+
         </form>
-    </body>
-</html>
+    </div>
+</div>
+
+{% endblock %}

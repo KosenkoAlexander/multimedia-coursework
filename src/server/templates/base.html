@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% if title %}
-    <title>{{ title }} - TODO</title>
+    <title>{{ title }} - Library App</title>
     {% else %}
-    <title>TODO</title>
+    <title>Library App</title>
     {% endif %}
     <style>
         :root {
@@ -22,23 +22,94 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            height: 100vh;
+            min-height: 100vh;
             background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
         }
 
+        /* --- TOP NAVIGATION --- */
+        .top-nav {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            padding: 0 20px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .top-nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            margin-left: 20px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .top-nav a:hover {
+            color: var(--accent-color);
+        }
+
+        .brand {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-left: 0 !important; /* Remove left margin for logo */
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+
+        /* --- FLASH MESSAGES --- */
+        .flash-container {
+            padding: 20px 20px 0 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            color: white;
+            font-weight: 500;
+            list-style: none; /* Remove list bullets */
+        }
+
+        .alert-success {
+            background-color: var(--success);
+        }
+
+        .alert-error, .alert-danger {
+            background-color: var(--danger);
+        }
+
+        .alert-info {
+            background-color: var(--accent-color);
+        }
+
+
+        /* --- GENERAL STYLES (ADMIN + OTHER) --- */
         .layout {
             display: flex;
             flex: 1;
+            width: 100%;
         }
 
-
+        /* Sidebar styles (needed for admin.html) */
         .sidebar {
             width: 250px;
-            background-color: var(--primary-color);
+            background-color: #34495e; /* Slightly lighter than header */
             color: var(--text-light);
             display: flex;
             flex-direction: column;
             padding: 20px;
+            height: calc(100vh - 60px); /* Height minus header */
         }
 
         .sidebar h2 {
@@ -66,7 +137,6 @@
             background-color: var(--accent-color);
         }
 
-
         .main-content {
             flex: 1;
             padding: 40px;
@@ -93,7 +163,6 @@
             margin-top: 0;
         }
 
-
         .form-group {
             margin-bottom: 20px;
         }
@@ -105,9 +174,7 @@
             color: #555;
         }
 
-        input,
-        select,
-        textarea {
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -145,40 +212,43 @@
 </head>
 
 <body>
-    <div>
-        {% if False %}
-        <!-- skip this part but remember how interesting the top thingy can be -->
-        {% if current_user.is_anonymous %}
-        <a href="{{ url_for('index') }}">Main page</a>
-        <a href="{{ url_for('login') }}">Login</a>
-        {% else %}
-        <span> user [ {{current_user.username}} ]</span>
-        || <a href="{{ url_for('index') }}">Images</a>
-        || <a href="{{ url_for('user', username=current_user.username) }}">Profile</a>
-        || <a href="{{ url_for('logout') }}">Logout</a>
-        {% endif %}
-        {% endif %}
-        Hello user
+
+<nav class="top-nav">
+    <a href="{{ url_for('index') }}" class="brand">📚 Library App</a>
+
+    <div class="nav-links">
+        {% if current_user.is_authenticated %}
+        <span>Welcome, {{ current_user.username }}!</span>
+
         <a href="{{ url_for('profile') }}">Profile</a>
-        <a href="{{ url_for('index') }}">Main page</a>
-        {% if is_admin %}
-        <a href="{{ url_for('admin') }}">Admin page</a>
+
+        {% if current_user.is_admin %}
+        <a href="{{ url_for('admin') }}" style="color: var(--accent-color);">Admin</a>
+        {% endif %}
+
+        <a href="{{ url_for('logout') }}" style="color: #e74c3c;">Logout</a>
+        {% else %}
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('index') }}">Home</a>
         {% endif %}
     </div>
-    <hr>
+</nav>
 
-    <!-- {% with messages = get_flashed_messages() %}
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-    <ul>
-        {% for message in messages %}
-        <li>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    {% endwith %} -->
-    <div class="layout">
-        {% block content %}{% endblock %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">
+        {{ message }}
     </div>
-</body>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+</div>
 
+<div class="layout">
+    {% block content %}{% endblock %}
+</div>
+
+</body>
 </html>
