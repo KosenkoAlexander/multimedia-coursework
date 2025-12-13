@@ -1,6 +1,6 @@
 import { agentApi, AGENTAPI } from "./threejs_container.js";
 
-const recordButton = document.getElementById('agent_button');
+const agentButton = document.getElementById('agent_button');
 const agentOutputText = document.getElementById('status');
 let recognition;
 let finalTranscript = '';
@@ -77,7 +77,7 @@ if (SpeechRecognition) {
         }
     };
 
-    recordButton.addEventListener('mousedown', () => {
+    agentButton.addEventListener('mousedown', () => {
         agentApi[AGENTAPI.LISTEN]();
         recognition.start();
     });
@@ -93,7 +93,7 @@ if (SpeechRecognition) {
 
 } else {
     agentOutputText.textContent = 'Web Speech API is not supported in this browser.';
-    recordButton.disabled = true;
+    agentButton.disabled = true;
     document.getElementById("user_input").readOnly = false;
 }
 
@@ -105,7 +105,7 @@ let utterance;
 function speakText(text, emotion = "Talk") {
     const new_state = Object.keys(agentApi).includes(emotion) ? emotion : AGENTAPI.TALK;
     // console.log(new_state);
-    if ('speechSynthesis' in window) {
+    if ('speechSynthesis' in window & !agentButton.disabled) {
         utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
         speechSynthesis.speak(utterance);
@@ -120,7 +120,7 @@ function speakText(text, emotion = "Talk") {
         toggleMouth(new_state);
         setTimeout(() => {
             toggleMouth();
-        }, text.length * 50);
+        }, text.length * 30);
         // console.warn('Text-to-speech not supported in this browser.');
     }
 }

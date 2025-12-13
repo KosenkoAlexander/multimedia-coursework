@@ -203,7 +203,6 @@
         cursor: pointer;
         text-align: center;
     }
-
 </style>
 
 <div class="dashboard-wrapper">
@@ -211,15 +210,8 @@
     <div class="dashboard-col col-table">
         <h3>📂 Data Overview</h3>
 
-        <div class="pagination-controls">
-            <button class="pagination-btn" onclick="prev_page()">← Prev</button>
-            <button class="pagination-btn" onclick="next_page()">Next →</button>
-        </div>
-
-        <div class="table-container">
-            <span id="tableSpan">
-                {% include "table.html" %}
-            </span>
+        <div id="tableSpan">
+            {% include "table.html" %}
         </div>
     </div>
 
@@ -271,18 +263,18 @@
 <script>
     function prev_page() {
         fetch("{{ url_for('paginated_prev') }}")
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById("tableSpan").innerHTML = html;
-                });
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById("tableSpan").innerHTML = html;
+            });
     }
 
     function next_page() {
         fetch("{{ url_for('paginated_next') }}")
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById("tableSpan").innerHTML = html;
-                });
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById("tableSpan").innerHTML = html;
+            });
     }
 
     function handleCheckbox(checkbox) {
