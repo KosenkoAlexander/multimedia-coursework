@@ -278,6 +278,20 @@ class DatabaseConnector:
             cur.execute("SELECT id, username, email, is_admin FROM users ORDER BY id")
             return cur.fetchall()
 
+    def get_user_by_username(self, username):
+        #Шукає користувача за username і повертає кортеж даних або None
+        if not self.conn: return None
+
+        query = """
+                SELECT id, username, email, password_hash, is_admin
+                FROM users
+                WHERE username = %s
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (username,))
+            return cur.fetchone()
+
     # ADD
 
     def add_user(self, username, email, password_hash, is_admin=False):
@@ -485,7 +499,7 @@ class DatabaseConnector:
 # TEST
 if __name__ == '__main__':
 
-    DB_NAME = "postgres"
+    DB_NAME = "course work"
     USER = "postgres"
     PASSWORD = os.getenv("POSTGRES_PASS", "postgres")
     HOST = "localhost"
