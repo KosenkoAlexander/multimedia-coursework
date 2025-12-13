@@ -10,11 +10,13 @@ from server.custom_paginated import CustomPaginated
 @login_required
 def index():
     form = MainButtonsForm()
-    if 'paginated' not in session or session['paginated'] is None: #TODO delete this dummy paginated
+    if 'paginated' not in session or session['paginated'] is None: #TODO delete this dummy paginated and dummy hints
         session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
+        session['hints'] = ['Hint A', 'Hint B', 'Hint C']
     paginated = CustomPaginated.from_dict(session['paginated'])
+    hints = session['hints'] if 'hints' in session else None
     print(session['paginated'])
-    return render_template('index.html', form=form, paginated=paginated, is_admin=current_user.is_admin)
+    return render_template('index.html', form=form, paginated=paginated, is_admin=current_user.is_admin, hints=hints)
 
 
 @app.route('/start', methods=['POST'])
@@ -85,8 +87,10 @@ def agent():
         if text:
             result = dummy_dialogue_processor.process_user_text(text)
             result_paginated = CustomPaginated(result['table_header'], result['table_body'], 10) if 'table_header' in result and 'table_body' in result and result['table_body'] is not None else None
+            result_hints = result['hints'] if 'hints' in result else None
+            session['hints'] = result_hints
             session['paginated'] = result_paginated.to_dict() if result_paginated else None
-            return jsonify({'text':result['text'], 'emotion':result['emotion'], 'table':render_template('table.html', paginated=result_paginated)}), 200
+            return jsonify({'text':result['text'], 'emotion':result['emotion'], 'table':render_template('table.html', paginated=result_paginated), 'hints':render_template('list.html', hints=result_hints)}), 200
         else:
             return jsonify({'status':'error', 'message':'Expected "text" key in JSON'}), 400
     else:
