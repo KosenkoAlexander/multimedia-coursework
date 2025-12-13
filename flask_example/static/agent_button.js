@@ -33,6 +33,7 @@ if ('webkitSpeechRecognition' in window) {
     };
 
     recognition.onend = () => {
+        agentApi[AGENTAPI.THINK]();
         statusDisplay.textContent = 'Answer in progres...';
         // finalTranscript = 'TEST STRING, COMMENT OUT WHEN DONE.';
         // console.log(finalTranscript);
@@ -44,7 +45,7 @@ if ('webkitSpeechRecognition' in window) {
             // make request to python api here!!!
             speakText("Whatever is returned from the backend");
         } else {
-            agentApi[AGENTAPI.NO]();  // TODO Listen-Idle transition too snappy because of No
+            agentApi[AGENTAPI.NO]();
             statusDisplay.textContent = 'No speech detected.';
         }
     };
@@ -55,7 +56,6 @@ if ('webkitSpeechRecognition' in window) {
     });
 
     recordButton.addEventListener('mouseup', () => {
-        agentApi[AGENTAPI.IDLE]();
         recognition.stop();
     });
 

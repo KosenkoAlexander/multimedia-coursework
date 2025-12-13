@@ -1,3 +1,4 @@
+import os
 import psycopg2
 
 class DatabaseConnector:
@@ -300,9 +301,9 @@ class DatabaseConnector:
 # TEST
 if __name__ == '__main__':
 
-    DB_NAME = "course work"
+    DB_NAME = "postgres"
     USER = "postgres"
-    PASSWORD = "postgres"
+    PASSWORD = os.getenv("POSTGRES_PASS", "postgres")
     HOST = "localhost"
 
     print(" Connecting to database...")
