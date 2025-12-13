@@ -26,8 +26,13 @@
         <span id="tableSpan">{% include "table.html" %}</span>
         <div style="display:flex; flex-direction: column; width: 300px; height: 500px;">
             <div id="threejs_container" style="flex-grow: 1;"></div>
+            <p><input type="checkbox", id="textCheckbox", onclick="handleCheckbox(this)">Use text input instead</p>
+            <div style="display:none;", id="textInputDiv">
             <p><input type="text" id="speechReplacement" placeholder="type here if speech problem"></p>
+            </div>
+            <div id="speechInputDiv">
             <button id="agent_button">Press and hold to speak</button>
+            </div>
             <p id="status"></p>
         </div>
         <script>
@@ -64,6 +69,15 @@
                     .then(html => {
                         document.getElementById("tableSpan").innerHTML = html;
                     });
+            }
+            function handleCheckbox(checkbox) {
+                if (checkbox.checked) {
+                    document.getElementById("textInputDiv").style.display = "block";
+                    document.getElementById("speechInputDiv").style.display = "none";
+                } else {
+                    document.getElementById("textInputDiv").style.display = "none";
+                    document.getElementById("speechInputDiv").style.display = "block";
+                }
             }
         </script>
 <script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
