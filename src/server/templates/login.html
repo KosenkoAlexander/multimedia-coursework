@@ -3,7 +3,7 @@
 {% block content %}
 
 <style>
-    /* Центрування на екрані (аналогічно профілю) */
+
     .auth-wrapper {
         display: flex;
         justify-content: center;
@@ -15,10 +15,9 @@
         box-sizing: border-box;
     }
 
-    /* Картка авторизації */
     .auth-container {
         width: 100%;
-        max-width: 380px; /* Трохи вужча для логіну */
+        max-width: 380px;
         background-color: #ffffff;
         border-radius: 12px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
@@ -38,7 +37,6 @@
         font-size: 0.95rem;
     }
 
-    /* Поля вводу */
     .form-group {
         margin-bottom: 20px;
         text-align: left;
@@ -72,7 +70,6 @@
         box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
     }
 
-    /* Checkbox "Remember Me" */
     .checkbox-group {
         display: flex;
         align-items: center;
@@ -92,7 +89,6 @@
         cursor: pointer;
     }
 
-    /* Кнопка */
     .btn {
         width: 100%;
         padding: 12px;
@@ -111,7 +107,6 @@
         transform: translateY(-2px);
     }
 
-    /* Помилки */
     .error-msg {
         color: var(--danger, #e74c3c);
         font-size: 0.85rem;
@@ -129,7 +124,7 @@
         border: 1px solid rgba(231, 76, 60, 0.2);
     }
 
-    /* Посилання на реєстрацію */
+
     .register-link {
         margin-top: 25px;
         font-size: 0.9rem;

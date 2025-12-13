@@ -15,22 +15,19 @@
 <script type="module" src="{{ url_for('static', filename='agent_button.js') }}"></script>
 
 <style>
-    /* Глобальний контейнер */
     .dashboard-wrapper {
         display: flex;
         flex-direction: row;
         gap: 20px;
         padding: 20px;
-        height: calc(100vh - 60px); /* Висота екрану мінус хедер */
+        height: calc(100vh - 60px);
         box-sizing: border-box;
         background-color: var(--bg-light);
 
-        /* ВИПРАВЛЕННЯ: Розтягуємо на всю ширину */
         width: 100%;
         max-width: 100%;
     }
 
-    /* ЗАГАЛЬНИЙ СТИЛЬ ДЛЯ КОЛОНОК (КАРТКИ) */
     .dashboard-col {
         background: white;
         border-radius: 12px;
@@ -38,28 +35,25 @@
         display: flex;
         flex-direction: column;
         padding: 20px;
-        overflow: hidden; /* Ховаємо скроли, що вилазять */
+        overflow: hidden;
     }
 
-    /* --- ПРОПОРЦІЇ (40% - 35% - 25%) --- */
-    /* Використовуємо flex-basis та flex-grow для заповнення */
 
     .col-table {
-        flex: 4; /* Пропорція 4 */
+        flex: 4;
         min-width: 350px;
     }
 
     .col-agent {
-        flex: 3.5; /* Пропорція 3.5 */
+        flex: 3.5;
         min-width: 300px;
     }
 
     .col-chat {
-        flex: 2.5; /* Пропорція 2.5 (трохи зменшив чат, щоб таблиці було більше місця) */
+        flex: 2.5;
         min-width: 250px;
     }
 
-    /* --- ЗАГОЛОВКИ --- */
     h3 {
         margin: 0 0 15px 0;
         font-size: 1.1rem;
@@ -69,7 +63,6 @@
         text-align: center;
     }
 
-    /* --- 1. ТАБЛИЦЯ (ЗЛІВА) --- */
     .table-container {
         flex: 1;
         overflow-y: auto;
@@ -96,7 +89,6 @@
     }
 
 
-    /* --- 2. АГЕНТ (ЦЕНТР) --- */
     .agent-layout {
         display: flex;
         flex-direction: column;
@@ -105,7 +97,7 @@
     }
 
     .viewport-box {
-        flex: 1; /* Займає все вільне місце по висоті */
+        flex: 1;
         background-color: #f0f2f5;
         border-radius: 8px;
         border: 1px solid #ddd;
@@ -160,7 +152,6 @@
     }
 
 
-    /* --- 3. ЧАТ (СПРАВА) --- */
     .chat-layout {
         display: flex;
         flex-direction: column;
@@ -171,7 +162,7 @@
     .chat-block {
         display: flex;
         flex-direction: column;
-        flex: 1; /* Рівномірно розтягує Input і Output */
+        flex: 1;
     }
 
     .chat-label {
@@ -201,7 +192,6 @@
         background-color: white;
     }
 
-    /* Підказки */
     .hints-section {
         border-top: 1px solid #eee;
         padding-top: 10px;
