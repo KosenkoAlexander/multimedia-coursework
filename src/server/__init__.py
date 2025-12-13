@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from server.config import Config
 from flask_login import LoginManager
@@ -10,7 +11,7 @@ login_manager.login_view = 'login'
 
 DB_NAME = "postgres"
 DB_USER = "postgres"
-DB_PASSWORD = "postgres"
+DB_PASSWORD = os.getenv("POSTGRES_PASS", "postgres")
 DB_HOST = "localhost"
 db = DatabaseConnector(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST)
 

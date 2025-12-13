@@ -1,5 +1,5 @@
 # code written here will be responsible for answering users input
-
+import os
 from enum import Enum
 import datetime
 from dialogues.text_processing import *
@@ -272,7 +272,7 @@ class DialogueProcessor:
             return None
         return self.database_connector.get_specialty_list()
 
-    def __init__(self, database_connector):
+    def __init__(self, database_connector: DatabaseConnector):
         self.history = [] # tuples (text, time)
         self.current_processor = self.process_initial
         self.genre_desc = None
@@ -293,7 +293,7 @@ class DialogueProcessor:
 if __name__=='__main__':
     DB_NAME = "postgres"
     USER = "postgres"
-    PASSWORD = "postgres"
+    PASSWORD = os.getenv("POSTGRES_PASS", "postgres")
     HOST = "localhost"
     db = DatabaseConnector(DB_NAME, USER, PASSWORD, HOST)
     dialogue_processor = DialogueProcessor(db)

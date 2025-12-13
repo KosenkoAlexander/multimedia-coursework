@@ -8,3 +8,10 @@ cd src
 export FLASK_APP=server/server.py
 flask run
 ```
+
+OR
+
+```
+cd src
+python main.py
+```
