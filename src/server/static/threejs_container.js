@@ -146,9 +146,8 @@ function fadeToAction(name, duration) {
 
     if (previousAction !== activeAction) {
         previousAction.fadeOut(duration);
+        playAction(activeAction, duration);
     }
-
-    playAction(activeAction, duration)
 }
 
 function playAction(action, duration) {

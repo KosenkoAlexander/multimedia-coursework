@@ -103,23 +103,24 @@ import { toggleMouth } from "./threejs_container.js";
 let utterance;
 
 function speakText(text, emotion = "Talk") {
-    const new_state = Object.values(agentApi).includes(emotion) ? emotion : AGENTAPI.TALK;
-    if ('speechSynthesis' in window) {
+    const new_state = Object.keys(agentApi).includes(emotion) ? emotion : AGENTAPI.TALK;
+    // console.log(new_state);
+    if ('speechSynthesis' in window & false) {
         utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
         speechSynthesis.speak(utterance);
 
         utterance.onstart = () => {
-            toggleMouth(new_state);  // TODO pass emotion
+            toggleMouth(new_state);
         };
         utterance.onend = () => {
             toggleMouth();
         };
     } else {
-        toggleMouth();
+        toggleMouth(new_state);
         setTimeout(() => {
             toggleMouth();
-        }, text.length * 150);
+        }, text.length * 50);
         // console.warn('Text-to-speech not supported in this browser.');
     }
 }

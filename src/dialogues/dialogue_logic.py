@@ -10,7 +10,6 @@ class Emotion(Enum):
     IDLE = 0
     THINK = 1
     WAIT = 2
-    LISTEN = 3
     TALK = 4
     TELL = 5
     YES = 6
@@ -20,7 +19,6 @@ class Emotion(Enum):
 EmotionString = {Emotion.IDLE:'Idle',
                  Emotion.THINK:'Think',
                  Emotion.WAIT:'Wait',
-                 Emotion.LISTEN:'Listen',
                  Emotion.TALK:'Talk',
                  Emotion.TELL:'Tell',
                  Emotion.YES:'Yes',
@@ -29,7 +27,7 @@ EmotionString = {Emotion.IDLE:'Idle',
 
 class DialogueProcessor:
     def format_as_dict(self, text=None, emotion=None, table_header=None, table_body=None):
-        return {'text':text, 'emotion':EmotionString[emotion] if emotion in EmotionString else EmotionString[Emotion.IDLE], 'table_header':table_header, 'table_body':table_body}
+        return {'text':text, 'emotion':EmotionString[emotion] if emotion in EmotionString else EmotionString[Emotion.TALK], 'table_header':table_header, 'table_body':table_body}
 
     def process_initial(self, text):
         text_l = text.lower()
@@ -45,7 +43,7 @@ class DialogueProcessor:
         if not self.database_connector:
             default_reply += ' Unfortunately my database is not connected, so I have limited knowledge'
         if len(words)==0:
-            return self.format_as_dict(default_reply, Emotion.ASK, default_table_h, default_table_b)
+            return self.format_as_dict(default_reply, Emotion.TALK, default_table_h, default_table_b)
         hello_detected = False
         for w in hello_words:
             if w in words:
@@ -60,7 +58,7 @@ class DialogueProcessor:
         text_l = text.lower()
         if re.match('goodbye.*', text_l):
             self.goodbye = True
-            return self.format_as_dict('Goodbye', Emotion.TALK)
+            return self.format_as_dict('Goodbye', Emotion.TELL)
         elif book_desc:=re.search(r'(?:\bfind\b|\bsearch\s+for\b)(.*)(?:book)(.*)', text_l):
             self.book_specifiers = re.findall(word_regex, book_desc.group(1))
             book_description = book_desc.group(2)
@@ -69,14 +67,14 @@ class DialogueProcessor:
                 potential_authors = [s for s in re.findall(word_regex, authored.group(1)) if s!='and']
                 if len(potential_authors)==0:
                     self.current_processor = self.process_clarify_authors
-                    return self.format_as_dict('Please clarify authors or say cancel to stop', Emotion.LISTEN)
+                    return self.format_as_dict('Please clarify authors or say cancel to stop', Emotion.ASK)
                 else:
                     return self.answer_for_nonempty_potential_authors(potential_authors)
             elif len(self.book_specifiers)>0:
                 return self.answer_books_by_genres_only()
             else:
                 self.current_processor = self.process_find_book
-                return self.format_as_dict('Please describe the book you want to find', Emotion.LISTEN)
+                return self.format_as_dict('Please describe the book you want to find', Emotion.ASK)
         elif library_desc:=re.search(r'(?:\bfind\b|\bsearch\b(?:\s+for\b)?)(.*)(?:librar(?:y|ies))(.*)', text_l):
             self.library_specifiers = [s for s in re.findall(word_regex, library_desc.group(1)) if s!='and']
             if close_to:=re.search(r'(?:\bnear\b|\bclose\b(?:\s+to\b)?)(.*)', library_desc.group(2)):
@@ -92,7 +90,7 @@ class DialogueProcessor:
             else:
                 if len(self.library_specifiers)==0:
                     self.current_processor = self.process_find_library
-                    return self.format_as_dict('Describe the library you want to find', Emotion.LISTEN)
+                    return self.format_as_dict('Describe the library you want to find', Emotion.ASK)
                 else:
                     return self.answer_libraries_by_specifiers()
         elif shop_desc:=re.search(r'(?:\bfind\b|\bsearch\b(?:\s+for\b)?)(.*)(?:shops?)(.*)', text_l):
@@ -110,7 +108,7 @@ class DialogueProcessor:
             else:
                 if len(self.shop_specifiers)==0:
                     self.current_processor = self.process_find_shop
-                    return self.format_as_dict('Describe the shop you want to find', Emotion.LISTEN)
+                    return self.format_as_dict('Describe the shop you want to find', Emotion.ASK)
                 else:
                     return self.answer_shops_by_specifiers()
         elif re.search(r'\b(list|get|describe|tell)\b.*\bgenre', text_l):
@@ -121,10 +119,10 @@ class DialogueProcessor:
         elif re.search(r'\b(list|get|describe|tell)\b.*\bspecialt', text_l):
             specialties = self.get_all_specialties()
             if not specialties:
-                return self.format_as_dict('Database connection issues, sorry')
+                return self.format_as_dict('Database connection issues, sorry', Emotion.NO)
             return self.format_as_dict('The following library and shop specialties are present in my database: '+', '.join(specialties[:self.max_told_items])+('and so on' if len(specialties)>self.max_told_items else ''), Emotion.TELL, ['Specialty'], [[s] for s in specialties])
 
-        return self.format_as_dict('Hello, your request was not recognised. If you need help, say help.')
+        return self.format_as_dict('Hello, your request was not recognised. If you need help, say help.', Emotion.NO)
 
     def process_clarify_authors(self, text):
         text_l = text.lower()
@@ -133,7 +131,7 @@ class DialogueProcessor:
             return self.format_as_dict('Cancelled', Emotion.YES)
         potential_authors = [s for s in re.findall(word_regex, text_l) if s!='and']
         if len(potential_authors)==0:
-            return self.format_as_dict('Input unclear again, please repeat authors or cancel search', Emotion.LISTEN)
+            return self.format_as_dict('Input unclear again, please repeat authors or cancel search', Emotion.ASK)
         return self.answer_for_nonempty_potential_authors(potential_authors)
 
     def answer_for_nonempty_potential_authors(self, potential_authors):
@@ -200,7 +198,7 @@ class DialogueProcessor:
             potential_authors = [s for s in re.findall(word_regex, authors_desc.group(1)) if s!='and']
             if len(potential_authors)==0:
                 self.current_processor = self.process_clarify_authors
-                return self.format_as_dict('Could not understand authors, please repeat or say cancel to stop', Emotion.WAIT)
+                return self.format_as_dict('Could not understand authors, please repeat or say cancel to stop', Emotion.ASK)
             else:
                 return self.answer_for_nonempty_potential_authors(potential_authors)
         elif genre_desc:=re.search(r'(?:genres?)(?:.*is|.*are)?(.*)', text_l):
@@ -238,7 +236,7 @@ class DialogueProcessor:
         self.library_specifiers = re.findall(word_regex, text)
         self.current_processor = self.process_default
         if len(self.library_specifiers)==0:
-            return self.format_as_dict('Description is not clear', Emotion.WAIT)
+            return self.format_as_dict('Description is not clear', Emotion.NO)
         return self.answer_libraries_by_specifiers()
 
     def process_find_shop(self, text): # implement address queries
@@ -246,7 +244,7 @@ class DialogueProcessor:
         self.shop_specifiers = re.findall(word_regex, text)
         self.current_processor = self.process_default
         if len(self.shop_specifiers)==0:
-            return self.format_as_dict('Description is not clear', Emotion.WAIT)
+            return self.format_as_dict('Description is not clear', Emotion.NO)
         return self.answer_shops_by_specifiers()
 
     def search_book_by_name(self, name):
