@@ -20,6 +20,9 @@ class DatabaseConnector:
         if hasattr(self, 'conn') and self.conn:
             self.conn.close()
 
+
+    #SEARCH
+
     def search_books_by_authors(self, authors):
         if not self.conn: return []
 
@@ -119,30 +122,8 @@ class DatabaseConnector:
             cur.execute(query, (book_name,))
             return cur.fetchall()
 
-    def get_book(self, name):
-        if not self.conn: return None
-        with self.conn.cursor() as cur:
-            cur.execute("SELECT id, name FROM book WHERE name ILIKE %s", (name,))
-            book_data = cur.fetchone()
-
-            if not book_data: return None
-
-            book_id, book_real_name = book_data
-
-            cur.execute(
-                "SELECT a.name || ' ' || a.surname FROM author a JOIN book_author ba ON a.id = ba.author WHERE ba.book = %s",
-                (book_id,))
-            authors = [row[0] for row in cur.fetchall()]
-
-            cur.execute("SELECT g.name FROM genre g JOIN book_genre bg ON g.id = bg.genre WHERE bg.book = %s",
-                        (book_id,))
-            genres = [row[0] for row in cur.fetchall()]
-
-            return (book_real_name, authors, genres)
-
     def search_shops_with_book(self, book_name):
         if not self.conn: return []
-
 
         query = """
                 SELECT s.name, s.address, bs.price, bs.link
@@ -156,44 +137,6 @@ class DatabaseConnector:
             cur.execute(query, (book_name,))
             # row[0] - name, row[1] - address, row[2] - price, row[3] - link
             return [(row[0], row[1], float(row[2]), row[3]) for row in cur.fetchall()]
-
-    def get_genre_list(self):
-        if not self.conn: return []
-        with self.conn.cursor() as cur:
-            cur.execute("SELECT name FROM genre")
-            return [row[0] for row in cur.fetchall()]
-
-    def get_specialty_list(self):
-        if not self.conn: return []
-        with self.conn.cursor() as cur:
-            cur.execute("SELECT name FROM specialty")
-            return [row[0] for row in cur.fetchall()]
-
-    def get_libraries_by_specialties(self, specialties):
-        if not self.conn: return []
-        query = """
-                SELECT DISTINCT l.name, l.address
-                FROM libraries l
-                         JOIN library_specialty ls ON l.id = ls.library
-                         JOIN specialty s ON s.id = ls.specialty
-                WHERE s.name = ANY (%s) \
-                """
-        with self.conn.cursor() as cur:
-            cur.execute(query, (specialties,))
-            return cur.fetchall()
-
-    def get_shops_by_specialties(self, specialties):
-        if not self.conn: return []
-        query = """
-                SELECT DISTINCT sh.name, sh.address
-                FROM shops sh
-                         JOIN shop_specialty ss ON sh.id = ss.shop
-                         JOIN specialty s ON s.id = ss.specialty
-                WHERE s.name = ANY (%s) \
-                """
-        with self.conn.cursor() as cur:
-            cur.execute(query, (specialties,))
-            return cur.fetchall()
 
     def find_user_by_id(self, id):
         # Повертає tuple (id, username, email, password_hash, is_admin) або None
@@ -235,10 +178,110 @@ class DatabaseConnector:
             cur.execute(query, (email,))
             return cur.fetchone()
 
+
+    # GET
+
+    def get_all_authors(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, name, surname FROM author ORDER BY surname")
+            return cur.fetchall()
+
+    def get_all_genres(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, name FROM genre ORDER BY name")
+            return cur.fetchall()
+
+    def get_all_shops(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, name FROM shops ORDER BY name")
+            return cur.fetchall()
+
+    def get_all_libraries(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, name FROM libraries ORDER BY name")
+            return cur.fetchall()
+
+    def get_book(self, name):
+        if not self.conn: return None
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, name FROM book WHERE name ILIKE %s", (name,))
+            book_data = cur.fetchone()
+
+            if not book_data: return None
+
+            book_id, book_real_name = book_data
+
+            cur.execute(
+                "SELECT a.name || ' ' || a.surname FROM author a JOIN book_author ba ON a.id = ba.author WHERE ba.book = %s",
+                (book_id,))
+            authors = [row[0] for row in cur.fetchall()]
+
+            cur.execute("SELECT g.name FROM genre g JOIN book_genre bg ON g.id = bg.genre WHERE bg.book = %s",
+                        (book_id,))
+            genres = [row[0] for row in cur.fetchall()]
+
+            return (book_real_name, authors, genres)
+
+    def get_genre_list(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT name FROM genre")
+            return [row[0] for row in cur.fetchall()]
+
+    def get_specialty_list(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT name FROM specialty")
+            return [row[0] for row in cur.fetchall()]
+
+    def get_libraries_by_specialties(self, specialties):
+        if not self.conn: return []
+        query = """
+                SELECT DISTINCT l.name, l.address
+                FROM libraries l
+                         JOIN library_specialty ls ON l.id = ls.library
+                         JOIN specialty s ON s.id = ls.specialty
+                WHERE s.name = ANY (%s) \
+                """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (specialties,))
+            return cur.fetchall()
+
+    def get_shops_by_specialties(self, specialties):
+        if not self.conn: return []
+        query = """
+                SELECT DISTINCT sh.name, sh.address
+                FROM shops sh
+                         JOIN shop_specialty ss ON sh.id = ss.shop
+                         JOIN specialty s ON s.id = ss.specialty
+                WHERE s.name = ANY (%s) \
+                """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (specialties,))
+            return cur.fetchall()
+
+    def get_all_books(self):
+        #Повертає список всіх книг для відображення у формі
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT id, name FROM book ORDER BY name")
+            return cur.fetchall()
+
+    def get_all_users(self):
+        if not self.conn: return []
+        with self.conn.cursor() as cur:
+            # Сортуємо по ID
+            cur.execute("SELECT id, username, email, is_admin FROM users ORDER BY id")
+            return cur.fetchall()
+
+    # ADD
+
     def add_user(self, username, email, password_hash, is_admin=False):
-        """
-        Додає користувача та повертає його ID.
-        """
+        #Додає користувача та повертає його ID.
         if not self.conn: return None
 
         query = """
@@ -250,12 +293,37 @@ class DatabaseConnector:
             with self.conn.cursor() as cur:
                 cur.execute(query, (username, email, password_hash, is_admin))
                 new_id = cur.fetchone()[0]
-                self.conn.commit()  # Зберігаємо зміни
+                self.conn.commit()
                 return new_id
         except Exception as e:
-            self.conn.rollback()  # Відкочуємо, якщо сталася помилка (наприклад, такий email вже існує)
+            self.conn.rollback()
             print(f"Error adding user: {e}")
             return None
+
+    def add_book_to_shop(self, book_id, shop_id, price, link):
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("""
+                            INSERT INTO book_shop (book, shop, price, link)
+                            VALUES (%s, %s, %s, %s)
+                            """, (book_id, shop_id, price, link))
+        except Exception as e:
+            print(f"Error adding to shop: {e}")
+
+    def add_book_to_library(self, book_id, library_id, link):
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("""
+                            INSERT INTO book_library (book, library, available, link)
+                            VALUES (%s, %s, true, %s)
+                            """, (book_id, library_id, link))
+        except Exception as e:
+            print(f"Error adding to library: {e}")
+
+
+    # CHANGE
 
     def change_user_username(self, id, new_username):
         if not self.conn: return
@@ -298,6 +366,122 @@ class DatabaseConnector:
             print(f"Error toggling admin status: {e}")
 
 
+    # CREATE
+
+    def create_book(self, name, pages):
+        #Створює книгу і повертає її ID
+        if not self.conn: return None
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("INSERT INTO book (name, pages) VALUES (%s, %s) RETURNING id", (name, pages))
+                book_id = cur.fetchone()[0]
+                return book_id
+        except Exception as e:
+            print(f"Error creating book: {e}")
+            return None
+
+    def create_author(self, name, surname):
+        #Створює автора і повертає його ID
+        if not self.conn: return None
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("INSERT INTO author (name, surname) VALUES (%s, %s) RETURNING id", (name, surname))
+                author_id = cur.fetchone()[0]
+                return author_id
+        except Exception as e:
+            print(f"Error creating author: {e}")
+            return None
+
+
+    # LINK
+
+    def link_authors_to_book(self, book_id, author_ids):
+        #Прив'язує список ID авторів до книги
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                for auth_id in author_ids:
+                    cur.execute("INSERT INTO book_author (book, author) VALUES (%s, %s)", (book_id, auth_id))
+        except Exception as e:
+            print(f"Error linking authors: {e}")
+
+    def link_genres_to_book(self, book_id, genre_ids):
+        #Прив'язує список ID жанрів до книги
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                for g_id in genre_ids:
+                    cur.execute("INSERT INTO book_genre (book, genre) VALUES (%s, %s)", (book_id, g_id))
+        except Exception as e:
+            print(f"Error linking genres: {e}")
+
+    def link_books_to_author(self, author_id, book_ids):
+        #Прив'язує список ID книг до автора (зворотна дія до link_authors_to_book)
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                for b_id in book_ids:
+                    cur.execute("INSERT INTO book_author (book, author) VALUES (%s, %s)", (b_id, author_id))
+        except Exception as e:
+            print(f"Error linking books to author: {e}")
+
+
+    # USER
+
+    def username_exists(self, username):
+        #Перевіряє, чи зайнятий username. Повертає True або False.
+        if not self.conn: return False
+
+        query = "SELECT 1 FROM users WHERE username = %s"
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (username,))
+            return cur.fetchone() is not None
+
+    def email_exists(self, email):
+        #Перевіряє, чи зайнятий email
+        if not self.conn: return False
+
+        query = "SELECT 1 FROM users WHERE email = %s"
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (email,))
+            return cur.fetchone() is not None
+
+
+    #DELETE
+
+    def delete_user(self, user_id):
+        #Видаляє користувача за ID
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error deleting user: {e}")
+
+    def delete_book(self, book_id):
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("DELETE FROM book WHERE id = %s", (book_id,))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error deleting book: {e}")
+
+    def delete_author(self, author_id):
+        if not self.conn: return
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("DELETE FROM author WHERE id = %s", (author_id,))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error deleting author: {e}")
+
 # TEST
 if __name__ == '__main__':
 
@@ -311,19 +495,18 @@ if __name__ == '__main__':
 
     if db.conn:
         print(" Connection successful!\n")
-        print("="*60)
+        print("=" * 60)
 
         # Test 1
         print("\n [1] Searching books by authors:")
         authors_to_find = [
-            "Einstein",                  # Прізвище
-            ("Charles", "Darwin"),       # Кортеж (Ім'я, Прізвище)
-            "Knuth Donald"               # Переплутаний порядок слів у рядку
+            "Einstein",  # Прізвище
+            ("Charles", "Darwin"),  # Кортеж (Ім'я, Прізвище)
+            "Knuth Donald"  # Переплутаний порядок слів у рядку
         ]
         books = db.search_books_by_authors(authors_to_find)
         for b in books:
             print(f"   - {b}")
-
 
         # Test 2
         print("\n [2] Searching books by genres (Biology & CS):")
@@ -331,7 +514,6 @@ if __name__ == '__main__':
         books_by_genre = db.search_books_by_genres(genres_to_find)
         for b in books_by_genre:
             print(f"   - {b}")
-
 
         # Test 3
         print("\n [3] Getting details for 'The Biosphere':")
@@ -344,7 +526,6 @@ if __name__ == '__main__':
         else:
             print(" Book not found")
 
-
         # Test 4
         print("\narchitectures [4] Libraries having 'Relativity: The Special and General Theory':")
         libraries = db.search_libraries_with_book("Relativity: The Special and General Theory")
@@ -353,7 +534,6 @@ if __name__ == '__main__':
             status = " Available" if lib[2] else " Taken"
             print(f"   - {lib[0]} ({lib[1]}) -> {status}")
 
-
         # Test 5
         print("\n [5] Shops selling 'Just for Fun: The Story of an Accidental Revolutionary':")
         shops = db.search_shops_with_book("Just for Fun: The Story of an Accidental Revolutionary")
@@ -361,23 +541,19 @@ if __name__ == '__main__':
             # shop = (Name, Address, Price)
             print(f"   - {shop[0]}: {shop[2]} UAH/USD (at {shop[1]})")
 
-
         # Test 6
         print("\n [6] All Genres list:")
         print(f"   {db.get_genre_list()}")
 
-
         # Test 7
         print("\n [7] All Specialties list:")
         print(f"   {db.get_specialty_list()}")
-
 
         # Test 8
         print("\n [8] Libraries specializing in 'Academic Research':")
         specialty_libs = db.get_libraries_by_specialties(["Academic Research"])
         for lib in specialty_libs:
             print(f"   - {lib[0]} ({lib[1]})")
-
 
         # Test 9
         print("\n [9] Shops specializing in 'Foreign Literature':")
@@ -450,7 +626,7 @@ if __name__ == '__main__':
         else:
             print(" Не вдалося створити користувача (можливо, такий email/username вже існує).")
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print(" Tests finished.")
 
     else:
