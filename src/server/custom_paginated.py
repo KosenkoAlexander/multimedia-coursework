@@ -1,9 +1,9 @@
 class CustomPaginated:
-    def __init__(self, header, rows, per_page = 0): #per_page = 0 means no max count
+    def __init__(self, header, rows, per_page = 0, page = 0): #per_page = 0 means no max count
         self.header = header
         self.rows = rows
         self.per_page = per_page
-        self.page = 0
+        self.page = page
         self.pages = len(rows)//per_page+(len(rows)%per_page!=0) if per_page else 1
 
     def get_current_items(self):
@@ -28,3 +28,10 @@ class CustomPaginated:
             self.page = page
         else:
             self.page = 0
+
+    def to_dict(self):
+        return {'header':self.header, 'rows':self.rows, 'per_page':self.per_page, 'page':self.page}
+
+    @staticmethod
+    def from_dict(d):
+        return CustomPaginated(d['header'], d['rows'], d['per_page'], d['page'])

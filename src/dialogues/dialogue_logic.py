@@ -7,6 +7,9 @@ import re
 from database.database import DatabaseConnector
 
 class DialogueProcessor:
+    def format_as_dict(self, text=None, emotion=None, table_header=None, table_body=None):
+        return {'text':text, 'emotion':emotion, 'table_header':table_header, 'table_body':table_body}
+
     def process_initial(self, text):
         text_l = text.lower()
         words = re.findall(word_regex, text_l)
@@ -14,12 +17,12 @@ class DialogueProcessor:
         if not self.database_connector:
             default_reply += ' Unfortunately my database is not connected, so I have limited knowledge'
         if len(words)==0:
-            return default_reply
+            return self.format_as_dict(default_reply)
         hello_detected = False
         for w in hello_words:
             if w in words:
                 if len(words) == 1:
-                    return default_reply 
+                    return self.format_as_dict(default_reply)
                 hello_detected = True
                 break
         # add more hello extensions later
@@ -29,7 +32,7 @@ class DialogueProcessor:
         text_l = text.lower()
         if re.match('goodbye.*', text_l):
             self.goodbye = True
-            return 'Goodbye'
+            return self.format_as_dict('Goodbye')
         elif book_desc:=re.search(r'(?:\bfind\b|\bsearch\s+for\b)(.*)(?:book)(.*)', text_l):
             self.book_specifiers = re.findall(word_regex, book_desc.group(1))
             book_description = book_desc.group(2)
@@ -38,71 +41,71 @@ class DialogueProcessor:
                 potential_authors = [s for s in re.findall(word_regex, authored.group(1)) if s!='and']
                 if len(potential_authors)==0:
                     self.current_processor = self.process_clarify_authors
-                    return 'Please clarify authors or say cancel to stop search'
+                    return self.format_as_dict('Please clarify authors or say cancel to stop search')
                 else:
                     return self.answer_for_nonempty_potential_authors(potential_authors)
             elif len(self.book_specifiers)>0:
                 return self.answer_books_by_genres_only()
             else:
                 self.current_processor = self.process_find_book
-                return 'Please describe the book you want to find'
+                return self.format_as_dict('Please describe the book you want to find')
         elif library_desc:=re.search(r'(?:\bfind\b|\bsearch\b(?:\s+for\b)?)(.*)(?:librar(?:y|ies))(.*)', text_l):
             self.library_specifiers = [s for s in re.findall(word_regex, library_desc.group(1)) if s!='and']
             if close_to:=re.search(r'(?:\bnear\b|\bclose\b(?:\s+to\b)?)(.*)', library_desc.group(2)):
                 if re.search(r'(?:\bme\b|(?:\bmy\b(?:home|house|location)))', close_to.group(1)):
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
                 else:
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
             elif place_desc := re.search(r'(?:\bin\b)(.*)', library_desc.group(2)):
                 if re.search(r'(?:\bmy\s+(?:town|city))', place_desc.group(1)):
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
                 else:
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
             else:
                 if len(self.library_specifiers)==0:
                     self.current_processor = self.process_find_library
-                    return 'Describe the library you want to find'
+                    return self.format_as_dict('Describe the library you want to find')
                 else:
                     return self.answer_libraries_by_specifiers()
         elif shop_desc:=re.search(r'(?:\bfind\b|\bsearch\b(?:\s+for\b)?)(.*)(?:shops?)(.*)', text_l):
             self.shop_specifiers = [s for s in re.findall(word_regex, shop_desc.group(1)) if s!='and']
             if close_to:=re.search(r'(?:\bnear\b|\bclose\b(?:\s+to\b)?)(.*)', shop_desc.group(2)):
                 if re.search(r'(?:\bme\b|(?:\bmy\b(?:home|house|location)))', close_to.group(1)):
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
                 else:
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
             elif place_desc := re.search(r'(?:\bin\b)(.*)', shop_desc.group(2)):
                 if re.search(r'(?:\bmy\s+(?:town|city))', place_desc.group(1)):
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
                 else:
-                    return 'Address queries are not implemented yet' # implement
+                    return self.format_as_dict('Address queries are not implemented yet') # implement
             else:
                 if len(self.shop_specifiers)==0:
                     self.current_processor = self.process_find_shop
-                    return 'Describe the shop you want to find'
+                    return self.format_as_dict('Describe the shop you want to find')
                 else:
                     return self.answer_shops_by_specifiers()
         elif re.search(r'\b(list|get|describe|tell)\b.*\bgenre', text_l):
             genres = self.get_all_genres()
             if not genres:
-                return 'Database connection issues, sorry'
-            return 'The following genres are present in my database: '+', '.join(genres)
+                return self.format_as_dict('Database connection issues, sorry')
+            return self.format_as_dict('The following genres are present in my database: '+', '.join(genres))
         elif re.search(r'\b(list|get|describe|tell)\b.*\bspecialt', text_l):
             specialties = self.get_all_specialties()
             if not specialties:
-                return 'Database connection issues, sorry'
-            return 'The following library and shop specialties are present in my database: '+', '.join(specialties)
+                return self.format_as_dict('Database connection issues, sorry')
+            return self.format_as_dict('The following library and shop specialties are present in my database: '+', '.join(specialties))
 
-        return 'Hello, your request was not recognised. If you need help, say help.'
+        return self.format_as_dict('Hello, your request was not recognised. If you need help, say help.')
 
     def process_clarify_authors(self, text):
         text_l = text.lower()
         if re.match(r'cancel\b', text_l):
             self.current_processor = self.process_default
-            return 'Cancelled'
+            return self.format_as_dict('Cancelled')
         potential_authors = [s for s in re.findall(word_regex, text_l) if s!='and']
         if len(potential_authors)==0:
-            return 'Input unclear again, please repeat authors or cancel search'
+            return self.format_as_dict('Input unclear again, please repeat authors or cancel search')
         return self.answer_for_nonempty_potential_authors(potential_authors)
 
     def answer_for_nonempty_potential_authors(self, potential_authors):
@@ -114,22 +117,22 @@ class DialogueProcessor:
         books = self.search_books()
         if len(books) == 0:
             self.current_processor = self.process_default
-            return 'Seems like no books from this author is in database'
+            return self.format_as_dict('Seems like no books from this author is in database')
         else:
             self.current_processor = self.process_after_book_found
             self.current_books = books
-            return 'The following books were found: '+', '.join(books) + '. Do you want me to search for them in libraries or shops?'
+            return self.format_as_dict('The following books were found: '+', '.join(books) + '. Do you want me to search for them in libraries or shops?')
 
     def answer_books_by_genres_only(self):
         books = self.search_books()
         if not books:
-            return 'There are problems with database connection'
+            return self.format_as_dict('There are problems with database connection')
         if len(books) == 0:
             self.current_processor = self.process_default
-            return 'Seems like there are no books corresponding to the description'
+            return self.format_as_dict('Seems like there are no books corresponding to the description')
         self.current_books = books
         self.current_processor = self.process_after_book_found
-        return 'The following books were found: ' + ', '.join(books) + '. Do you want me to serach for them in librarier or shops?'
+        return self.format_as_dict('The following books were found: ' + ', '.join(books) + '. Do you want me to serach for them in librarier or shops?')
 
     def answer_book_name(self, name, none_if_negative = False):
         book = self.search_book_by_name(name)
@@ -138,30 +141,30 @@ class DialogueProcessor:
                 return None
             else:
                 self.current_processor = self.process_default
-                return 'Book with this name was not found'
+                return self.format_as_dict('Book with this name was not found')
         self.current_processor = self.process_after_book_found
         self.current_books = book
-        return 'There is a book with name '+book[0]+' written by '+', '.join(book[1])+'. Want me to search it in shops or libraries?'
+        return self.format_as_dict('There is a book with name '+book[0]+' written by '+', '.join(book[1])+'. Want me to search it in shops or libraries?')
 
     def answer_libraries_by_specifiers(self):
         libraries = self.search_libraries()
         self.current_processor = self.process_default
         if len(libraries)==0:
-            return 'No libraries with specified description found'
-        return 'Libraries corresponding to description: '+', '.join([l[0]+', located at '+l[1] for l in libraries])
+            return self.format_as_dict('No libraries with specified description found')
+        return self.format_as_dict('Libraries corresponding to description: '+', '.join([l[0]+', located at '+l[1] for l in libraries]))
 
     def answer_shops_by_specifiers(self):
         shops = self.search_shops()
         self.current_processor = self.process_default
         if len(shops)==0:
-            return 'No shops with specified description found'
-        return 'Shops corresponding to description: '+', '.join([s[0]+', located at '+s[1] for s in shops])
+            return self.format_as_dict('No shops with specified description found')
+        return self.format_as_dict('Shops corresponding to description: '+', '.join([s[0]+', located at '+s[1] for s in shops]))
 
     def process_find_book(self, text):
         text_l = text.lower()
         if text_l == 'cancel':
             self.current_processor = self.process_default
-            return 'Cancelling search'
+            return self.format_as_dict('Cancelling search')
         if book_name:=re.search(r'(?:\bname\b).*(?:\bis\b)?(.*)', text_l):
             name = book_name.group(1)
             return self.answer_book_name(name)
@@ -169,14 +172,14 @@ class DialogueProcessor:
             potential_authors = [s for s in re.findall(word_regex, authors_desc.group(1)) if s!='and']
             if len(potential_authors)==0:
                 self.current_processor = self.process_clarify_authors
-                return 'Could not understand authors, please repeat or say cancel to stop search'
+                return self.format_as_dict('Could not understand authors, please repeat or say cancel to stop search')
             else:
                 return self.answer_for_nonempty_potential_authors(potential_authors)
         elif genre_desc:=re.search(r'(?:genres?)(?:.*is|.*are)?(.*)', text_l):
             self.book_specifiers = re.findall(word_regex, genre_desc.group(1))
             if len(self.book_specifiers)>0:
                 return self.answer_books_by_genres_only()
-        return 'Description is not recognisable, please say book genres, book name or book authors, or say cancel if you want to stop searching'
+        return self.format_as_dict('Description is not recognisable, please say book genres, book name or book authors, or say cancel if you want to stop searching')
 
     def process_after_book_found(self, text):
         text_l = text.lower()
@@ -186,23 +189,23 @@ class DialogueProcessor:
         self.current_processor = self.process_default
         if not in_libraries and not in_shops:
             if text == 'no':
-                return 'Stopping search'
+                return self.format_as_dict('Stopping search')
             else:
-                return 'Request not recognised'
+                return self.format_as_dict('Request not recognised')
         if in_libraries:
             libraries = self.search_libraries_by_books()
             places_string += ', '.join([l[0]+', located at '+l[1] for l in libraries])
         if in_shops:
             shops = self.search_shops_by_books()
             places_string += ', '.join([s[0]+', located at '+s[1] for s in shops])
-        return 'The following places may have these books: '+places_string
+        return self.format_as_dict('The following places may have these books: '+places_string)
 
     def process_find_library(self, text): # implement address queries
         text_l = text.lower()
         self.library_specifiers = re.findall(word_regex, text)
         self.current_processor = self.process_default
         if len(self.library_specifiers)==0:
-            return 'Description is not clear'
+            return self.format_as_dict('Description is not clear')
         return self.answer_libraries_by_specifiers()
 
     def process_find_shop(self, text): # implement address queries
@@ -210,7 +213,7 @@ class DialogueProcessor:
         self.shop_specifiers = re.findall(word_regex, text)
         self.current_processor = self.process_default
         if len(self.shop_specifiers)==0:
-            return 'Description is not clear'
+            return self.format_as_dict('Description is not clear')
         return self.answer_shops_by_specifiers()
 
     def search_book_by_name(self, name):

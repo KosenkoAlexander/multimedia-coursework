@@ -1,5 +1,5 @@
-from flask import render_template, request, jsonify, redirect, url_for
-from server import app
+from flask import render_template, request, jsonify, redirect, url_for, session
+from server import app, db
 from server.forms import MainButtonsForm, LoginForm, RegistrationForm, ProfileUsernameForm, ProfilePasswordForm
 from server.user import User
 from flask_login import current_user, login_user, login_required, logout_user
@@ -10,12 +10,9 @@ from server.custom_paginated import CustomPaginated
 @login_required
 def index():
     form = MainButtonsForm()
-    if not current_user.paginated:
-        current_user.paginated = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2)
-    paginated = current_user.paginated
-    if paginated:
-        page = request.args.get('page', 0, type=int)
-        paginated.set_page(page)
+    if 'paginated' not in session: #TODO delete this dummy paginated
+        session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
+    paginated = CustomPaginated.from_dict(session['paginated'])
     return render_template('index.html', form=form, paginated=paginated)
 
 
@@ -73,3 +70,40 @@ def profile():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+from dialogues.dialogue_logic import DialogueProcessor
+dummy_dialogue_processor = DialogueProcessor(db) #TODO replace with dialogue processor of user
+
+#TODO require login
+#@login_required
+@app.route('/agent', methods=['POST'])
+def agent():
+    if request.is_json:
+        data = request.get_json()
+        text = data.get('text')
+        if text:
+            result = dummy_dialogue_processor.process_user_text(text)
+            result_paginated = CustomPaginated(result['table']) if result['table'] else None
+            dummy_paginated = result_paginated.to_dict()
+            return jsonify({'text':result['text'], 'emotion':result['emotion'], 'table':render_template('table.html', paginated=result_paginated)})
+        else:
+            return jsonify({'status':'error', 'message':'Expected "text" key in JSON'}), 400
+    else:
+        return jsonify({'status':'error', 'message':'Expected JSON'}), 400
+
+
+@login_required
+@app.route('/paginated/next', methods=['GET', 'POST'])
+def paginated_next():
+    paginated = CustomPaginated.from_dict(session['paginated'])
+    paginated.set_page(paginated.next_page_num())
+    session['paginated'] = paginated.to_dict()
+    return render_template('table.html', paginated=paginated)
+
+@login_required
+@app.route('/paginated/prev', methods=['GET', 'POST'])
+def paginated_prev():
+    paginated = CustomPaginated.from_dict(session['paginated'])
+    paginated.set_page(paginated.prev_page_num())
+    session['paginated'] = paginated.to_dict()
+    return render_template('table.html', paginated=paginated)

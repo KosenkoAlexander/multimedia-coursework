@@ -1,0 +1,29 @@
+{% if paginated %}
+<p>
+<table>
+    <thead><tr>
+        {% for h in paginated.header %}
+        <th>{{ h }}</th>
+        {% endfor %}
+    </tr></thead>
+    <tbody>
+        {% for row in paginated.get_current_items() %}
+        <tr>
+            {% for cell in row %}
+            <td>{{ cell }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</p>
+<p>
+Page {{ paginated.page+1 }} / {{ paginated.pages }}<br>
+{% if paginated.prev_page_num() is not none %}
+<button onclick="prev_page()">Prev</button>
+{% endif %}
+{% if paginated.next_page_num() is not none %}
+<button onclick="next_page()">Next</button>
+{% endif %}
+</p>
+{% endif %}
