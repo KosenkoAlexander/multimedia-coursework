@@ -1,9 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <title> Main page </title>
-    <script type="importmap">
+{% block content %}
+
+<script type="importmap">
         {
             "imports": {
                 "three": "https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js",
@@ -11,92 +10,83 @@
             }
         }
     </script>
-    <script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='agent_button.js' )}}"></script>
-</head>
+<script type="module" src="{{ url_for('static', filename='threejs_container.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='agent_button.js' )}}"></script>
 
-<body>
-    <nav>
-        Hello user
-        <a href="{{ url_for('profile') }}">Profile</a>
-        <a href="{{ url_for('index') }}">Main page</a>
-        {% if is_admin %}
-        <a href="{{ url_for('admin') }}">Admin page</a>
-        {% endif %}
-    </nav>
 
-    {% if False %}
-    <!-- test the backend with /start endpoint -->
-    <form id="mainForm" , action="{{ url_for('start') }}" method="post" novalidate>
-        {{ form.hidden_tag() }}
-        {{ form.start() }}
-    </form>
-    <p id="responseText">Press the button!</p>
-    {% endif %}
+{% if False %}
+<!-- test the backend with /start endpoint -->
+<form id="mainForm" , action="{{ url_for('start') }}" method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ form.start() }}
+</form>
+<p id="responseText">Press the button!</p>
+{% endif %}
 
-    <div style="width: 90vw; margin: 0 auto; display:flex; flex-direction: row; justify-content: space-between;">
-        <span id="tableSpan">{% include "table.html" %}</span>
-        <div style="display:flex; flex-direction: row;">
-            <div style="display:flex; flex-direction: column; width: 300px; height: 500px;">
-                <div id="threejs_container" style="flex-grow: 1;"></div>
-                <button id="agent_button">Click before speaking</button>
-                <label>
-                    <input type="checkbox" , onclick="handleCheckbox(this)">
-                    Use text input instead
-                </label>
-            </div>
-            <div style="display: flex; flex-direction:column">
-                <span>User input</span>
-                <textarea id="user_input" rows="10" cols="40" readonly></textarea>
-                <span>Agent output</span>
-                <textarea id="status" rows="10" cols="40"></textarea>
-            </div>
+<div style="width: 90vw; margin: 0 auto; display:flex; flex-direction: row; justify-content: space-between;">
+    <span id="tableSpan">{% include "table.html" %}</span>
+    <div style="display:flex; flex-direction: row;">
+        <div style="display:flex; flex-direction: column; width: 300px; height: 500px;">
+            <div id="threejs_container" style="flex-grow: 1;"></div>
+            <button id="agent_button">Click before speaking</button>
+            <label>
+                <input type="checkbox" , onclick="handleCheckbox(this)">
+                Use text input instead
+            </label>
+        </div>
+        <div style="display: flex; flex-direction:column">
+            <span>User input</span>
+            <textarea id="user_input" rows="10" cols="40" readonly></textarea>
+            <span>Agent output</span>
+            <textarea id="status" rows="10" cols="40"></textarea>
         </div>
     </div>
+</div>
 
-    <script>
-        {% if False %}
-        const mainForm = document.getElementById('mainForm');
-        const responseText = document.getElementById('responseText')
-        mainForm.addEventListener('submit', async (event) => {
-            event.preventDefault()
-            const formData = new FormData(mainForm)
-            try {
-                const response = await fetch('/start', { method: 'POST', body: formData });
-                if (response.ok) {
-                    const result = await response.json();
-                    responseText.textContent = 'Button pressed with no refresh!'
-                    console.log('success:', result);
-                } else {
-                    const error = await response.json();
-                    console.error('response error:', error);
-                }
-            } catch (error) {
-                console.error('fetch error:', error);
+<script>
+    {% if False %}
+    const mainForm = document.getElementById('mainForm');
+    const responseText = document.getElementById('responseText')
+    mainForm.addEventListener('submit', async (event) => {
+        event.preventDefault()
+        const formData = new FormData(mainForm)
+        try {
+            const response = await fetch('/start', { method: 'POST', body: formData });
+            if (response.ok) {
+                const result = await response.json();
+                responseText.textContent = 'Button pressed with no refresh!'
+                console.log('success:', result);
+            } else {
+                const error = await response.json();
+                console.error('response error:', error);
             }
-        });
-        {% endif %}
-
-        function prev_page() {
-            fetch("{{ url_for("paginated_prev") }}")
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById("tableSpan").innerHTML = html;
-                });
+        } catch (error) {
+            console.error('fetch error:', error);
         }
-        function next_page() {
-            fetch("{{ url_for("paginated_next") }}")
-                .then(response => response.text())
-                .then(html => {
-                    document.getElementById("tableSpan").innerHTML = html;
-                });
-        }
-        function handleCheckbox(checkbox) {
-            document.getElementById("user_input").readOnly = !checkbox.checked;
-            document.getElementById("agent_button").disabled = checkbox.checked;
-        }
-    </script>
+    });
+    {% endif %}
 
-</body>
+    function prev_page() {
+        fetch("{{ url_for("paginated_prev") }}")
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById("tableSpan").innerHTML = html;
+            });
+    }
+    function next_page() {
+        fetch("{{ url_for("paginated_next") }}")
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById("tableSpan").innerHTML = html;
+            });
+    }
+    function handleCheckbox(checkbox) {
+        document.getElementById("user_input").readOnly = !checkbox.checked;
+        document.getElementById("agent_button").disabled = checkbox.checked;
+    }
+</script>
 
-</html>
+
+
+
+{% endblock %}
