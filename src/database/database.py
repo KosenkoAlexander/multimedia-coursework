@@ -535,6 +535,41 @@ class DatabaseConnector:
         except Exception as e:
             print(f"Error updating password: {e}")
             return False
+
+
+#FAVOURITES
+
+    def add_favorite(self, user_id, book_id):
+        query = "INSERT OR IGNORE INTO favorites (user_id, book_id) VALUES (?, ?)"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, book_id))
+            self.conn.commit()
+
+    def remove_favorite(self, user_id, book_id):
+        query = "DELETE FROM favorites WHERE user_id = ? AND book_id = ?"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, book_id))
+            self.conn.commit()
+
+    def get_user_favorites(self, user_id):
+        #Отримує список всіх улюблених книг користувача з деталями про книгу
+        query = """
+                SELECT b.id, b.name, b.pages, b.cover_image
+                FROM books b
+                         JOIN favorites f ON b.id = f.book_id
+                WHERE f.user_id = ? \
+                """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id,))
+            return cur.fetchall()
+
+    def is_book_favorite(self, user_id, book_id):
+        #Перевіряє, чи є конкретна книга в улюблених
+        query = "SELECT 1 FROM favorites WHERE user_id = ? AND book_id = ?"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, book_id))
+            return cur.fetchone() is not None
+
 # TEST
 if __name__ == '__main__':
 

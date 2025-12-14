@@ -173,4 +173,21 @@ def paginated_prev():
     return render_template('table.html', paginated=paginated)
 
 
-from server import routes_admin
+@app.route('/toggle_favorite/<int:book_id>', methods=['POST'])
+@login_required
+def toggle_favorite(book_id):
+    if db.is_book_favorite(current_user.id, book_id):
+        db.remove_favorite(current_user.id, book_id)
+        flash('Removed from favorites', 'info')
+    else:
+        db.add_favorite(current_user.id, book_id)
+        flash('Added to favorites', 'success')
+
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/my_favorites')
+@login_required
+def my_favorites():
+    fav_books = db.get_user_favorites(current_user.id)
+    return render_template('favorites.html', books=fav_books)
