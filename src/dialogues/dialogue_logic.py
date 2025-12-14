@@ -150,7 +150,7 @@ class DialogueProcessor:
             self.current_processor = self.process_default
             return self.format_as_dict('Seems like no books from this author is in database', Emotion.NO)
         else:
-            self.current_processor = self.process_after_book_found
+            self.current_processor = self.process_after_books_found
             # books = [list(b) for b in books]
             self.current_books = books
             return self.format_as_dict(
@@ -168,7 +168,7 @@ class DialogueProcessor:
             self.current_processor = self.process_default
             return self.format_as_dict('Seems like there are no books corresponding to the description', Emotion.NO)
         self.current_books = books
-        self.current_processor = self.process_after_book_found
+        self.current_processor = self.process_after_books_found
         return self.format_as_dict(
             'The following books were found: ' + ', '.join([b[1] for b in books[:self.max_told_items]]) + ('and so on' if len(books)>self.max_told_items else '') + '. Do you want me to serach for them in librarier or shops?', 
             Emotion.WAIT,
@@ -202,7 +202,7 @@ class DialogueProcessor:
                 self.current_processor = self.process_default
                 return self.format_as_dict('Book with this name was not found')
         self.current_processor = self.process_after_book_found
-        self.current_books = book
+        self.current_book = book[0]
         return self.format_as_dict('There is a book with name '+book[0]+' written by '+', '.join(book[1])+'. Want me to search it in shops or libraries?', Emotion.WAIT, ['Name', 'Authors', 'Genres'], [[book[0], ', '.join(book[1]), ', '.join(book[2])]])
 
     def answer_libraries_by_specifiers(self):
@@ -240,29 +240,42 @@ class DialogueProcessor:
                 return self.answer_books_by_genres_only()
         return self.format_as_dict('Description is not recognisable, please say book genres, name or authors, or say cancel if you want to stop', Emotion.WAIT)
 
+    def process_after_books_found(self, text):
+        text_l = text.lower()
+        if re.match('cancel', text_l):
+            self.current_processor = self.process_default
+            return self.format_as_dict('Canceling', Emotion.YES)
+        book = None#TODO replace with db call
+        if not book:
+            return self.format('Name not clear. Please repeat or cancel', Emotion.NO)
+        self.current_processor = self.process_after_books_found
+        self.current_book = book[0]
+        return self.format_as_dict('Book with name '+book[0]+' recognised. Would you like to search for it in shops or libraries?', Emotion.ASK, ['Name', 'Authors', 'Genres'], [[book[0], ', '.join(book[1]), ', '.join(book[2])]])
+
     def process_after_book_found(self, text):
         text_l = text.lower()
         places_string = ''
-        in_libraries = text_l == 'yes' or re.search(r'\blibrar', text_l)
-        in_shops = text_l == 'yes' or re.search(r'\bshop', text_l)
+        in_libraries = text_l == 'yes' or re.search(r'\blibrar', text_l) or re.search(r'\bboth\b', text_l)
+        in_shops = text_l == 'yes' or re.search(r'\bshop', text_l) or re.search(r'\bboth\b', text_l)
         self.current_processor = self.process_default
         if not in_libraries and not in_shops:
             if text == 'no':
                 return self.format_as_dict('Stopping search', Emotion.YES)
             else:
+                self.current_processor = self.process_after_book_found
                 return self.format_as_dict('Request not recognised', Emotion.NO)
         num_told = 0
         places = []
         if in_libraries:
-            libraries = self.search_libraries_by_books()
+            libraries = self.search_libraries_by_book()
             num_told += len(libraries)
             places_string += ', '.join([l[1] for l in libraries[:self.max_told_items]])
-            places += [[l[0], l[1], l[2], 'yes' if l[3] else 'no', l[4] if l[4] else ''] for l in libraries]
+            places += [[l[0], l[1], 'yes' if l[2] else 'no', l[3] if l[3] else ''] for l in libraries]
         if in_shops and num_told<self.max_told_items:
-            shops = self.search_shops_by_books()
+            shops = self.search_shops_by_book()
             places_string += ', '.join([s[1] for s in shops[:self.max_told_items-num_told]])
-            places += [[s[0], s[1], s[2], s[3], s[4] if s[4] else ''] for s in shops]
-        return self.format_as_dict('The following places may have these books: '+places_string, Emotion.TELL, ['Book', 'Place', 'Location', ('Price/Available' if in_shops else 'Availability') if in_libraries else 'Price', 'Link'], places)
+            places += [[s[0], s[1], s[2], s[3] if s[3] else ''] for s in shops]
+        return self.format_as_dict('The following places may have this book: '+places_string, Emotion.TELL, ['Place', 'Location', ('Price/Available' if in_shops else 'Availability') if in_libraries else 'Price', 'Link'], places)
 
     def process_find_library(self, text): # implement address queries
         text_l = text.lower()
@@ -313,23 +326,21 @@ class DialogueProcessor:
             return []
         return self.database_connector.get_shops_by_specialties(self.shop_specifiers)
 
-    def search_libraries_by_books(self):
-        # TODO FIX: rework so that previous step allows to select one book
+    def search_libraries_by_book(self):
         if not self.database_connector:
             return None
-        if len(self.current_books)==0:
+        if not self.current_book:
             return []
-        libraries = {(b,l[0],l[1],l[2],l[3]) for b in self.current_books for l in self.database_connector.search_libraries_with_book(b)}
-        return list(libraries)
+        libraries = self.database_connector.search_libraries_with_book(self.current_book)
+        return libraries
 
-    def search_shops_by_books(self):
-        # TODO FIX: rework rework so that previous step allows to select one book
+    def search_shops_by_book(self):
         if not self.database_connector:
             return None
-        if len(self.current_books)==0:
+        if not self.current_book:
             return []
-        shops = {(b,s[0],s[1],s[2],s[3]) for b in self.current_books for s in self.database_connector.search_shops_with_book(b)}
-        return list(shops)
+        shops = self.database_connector.search_shops_with_book(self.current_book)
+        return shops
 
     def get_all_genres(self):
         if not self.database_connector:
@@ -349,6 +360,7 @@ class DialogueProcessor:
         self.shop_specifiers = []
         self.database_connector = database_connector
         self.current_books = []
+        self.current_book = None
         self.goodbye = False
         self.book_specifiers = []
         self.current_authors = []
@@ -358,6 +370,7 @@ class DialogueProcessor:
                                 self.process_find_book:['Author is <name and/or surname>','Genres are <genres>','Name is <name>', 'Cancel'],
                                 self.process_find_library:['<specialties>', 'Cancel'],
                                 self.process_find_shop:['<specialties>', 'Cancel'],
+                                self.process_after_books_found:['<book name>', 'Cancel'],
                                 self.process_after_book_found:['In libraries', 'In shops', 'Yes', 'In libraries and shops', 'No'],
                                 self.process_clarify_authors:['<name and/or surname>']}
 
