@@ -10,9 +10,10 @@ from server.custom_paginated import CustomPaginated
 @login_required
 def index():
     form = MainButtonsForm()
-    if 'paginated' not in session or session['paginated'] is None: #TODO delete this dummy paginated and dummy hints
-        session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
-        session['hints'] = ['Hint A', 'Hint B', 'Hint C']
+    # TEST the interface with dummy data
+    # if 'paginated' not in session or session['paginated'] is None:
+    #     session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
+    #     session['hints'] = ['Hint A', 'Hint B', 'Hint C']
     paginated = CustomPaginated.from_dict(session['paginated'])
     hints = session['hints'] if 'hints' in session else None
     print(session['paginated'])
@@ -96,6 +97,11 @@ def agent():
     else:
         return jsonify({'status':'error', 'message':'Expected JSON'}), 400
 
+@login_required
+@app.route('/make_faw/<int:book_id>', methods=['POST'])
+def make_faw(book_id: int):
+    # TODO call db with current user id and passed book id to make the book faw
+    return jsonify({'status': 'ok'}), 200
 
 @login_required
 @app.route('/paginated/next', methods=['GET', 'POST'])

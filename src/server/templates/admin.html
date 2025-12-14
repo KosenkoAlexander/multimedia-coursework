@@ -64,12 +64,14 @@
                 <div class="form-group">
                     <label>Type:</label>
                     <select id="new_book_location_type" name="location_type" onchange="toggleNewBookLocation()">
+                        <option value="" selected disabled hidden></option>
                         <option value="shop">Shop</option>
                         <option value="library">Library</option>
                     </select>
                 </div>
 
-                <div id="location_details" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 5px;">
+                <div id="location_details"
+                    style="display: none; background: #f9f9f9; padding: 15px; border-radius: 5px;">
 
                     <div class="form-group" id="shop_select_group" style="display: none;">
                         <label>Shops:</label>
@@ -132,7 +134,8 @@
                     </tbody>
                 </table>
             </div>
-        </div> <div id="add-author" class="section">
+        </div>
+        <div id="add-author" class="section">
             <h3>Add New Author</h3>
             <form action="/add_author" method="POST">
 
@@ -197,7 +200,8 @@
                     </tbody>
                 </table>
             </div>
-        </div> <div id="manage-users" class="section">
+        </div>
+        <div id="manage-users" class="section">
             <h3>👤 User Management</h3>
 
             <div style="overflow-x: auto; margin-bottom: 30px;">
@@ -277,9 +281,11 @@
                 </div>
                 <button type="submit" class="submit-btn">Create User</button>
             </form>
-        </div> </main>
+        </div>
+    </main>
 
-</div> <style>
+</div>
+<style>
     /* CSS для Flex-розмітки */
     .admin-container {
         display: flex;

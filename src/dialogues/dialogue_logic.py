@@ -6,6 +6,9 @@ from dialogues.text_processing import *
 import re
 from database.database import DatabaseConnector
 
+from flask import url_for
+from markupsafe import Markup
+
 class Emotion(Enum):
     IDLE = 0
     THINK = 1
@@ -148,9 +151,15 @@ class DialogueProcessor:
             return self.format_as_dict('Seems like no books from this author is in database', Emotion.NO)
         else:
             self.current_processor = self.process_after_book_found
+            # books = [list(b) for b in books]
             self.current_books = books
-            return self.format_as_dict('The following books were found: '+', '.join(books[:self.max_told_items]) +('and so on' if len(books)>self.max_told_items else '')+ '. Do you want me to search for them in libraries or shops?', Emotion.WAIT, ['Book'], [[b] for b in books])
-
+            return self.format_as_dict(
+                'The following books were found: '+', '.join([b[1] for b in books[:self.max_told_items]]) +('and so on' if len(books)>self.max_told_items else '')+ '. Do you want me to search for them in libraries or shops?',
+                Emotion.WAIT,
+                ['ID', 'Book'],
+                self._make_id_into_faw_link(books)
+                )
+    
     def answer_books_by_genres_only(self):
         books = self.search_books()
         if not books:
@@ -160,7 +169,29 @@ class DialogueProcessor:
             return self.format_as_dict('Seems like there are no books corresponding to the description', Emotion.NO)
         self.current_books = books
         self.current_processor = self.process_after_book_found
-        return self.format_as_dict('The following books were found: ' + ', '.join(books[:self.max_told_items]) + ('and so on' if len(books)>self.max_told_items else '') + '. Do you want me to serach for them in librarier or shops?', Emotion.WAIT, ['Book'], [[b] for b in books])
+        return self.format_as_dict(
+            'The following books were found: ' + ', '.join([b[1] for b in books[:self.max_told_items]]) + ('and so on' if len(books)>self.max_told_items else '') + '. Do you want me to serach for them in librarier or shops?', 
+            Emotion.WAIT,
+            ['ID', 'Book'],
+            self._make_id_into_faw_link(books)
+            )
+    
+    @staticmethod
+    def _make_id_into_faw_link(books):
+        """
+            Takes list of (id, name) fields of the books
+            Makes id into clickable "make_faw" link for current user
+        """
+        def wrap_id(id):
+            """dirty crutch"""
+            wrapper_form = f"""
+<form class="FawIdForm" action="{url_for("make_faw", book_id=id)}" method="post" style="display:inline">
+    <button type="submit">{id}</button>
+</form>"""
+            return Markup(f"<button type='button' onclick='makeFAW({id})'>{id}</button>")
+        return [
+            [wrap_id(id), name] for (id, name) in books
+        ]
 
     def answer_book_name(self, name, none_if_negative = False):
         book = self.search_book_by_name(name)
@@ -255,6 +286,9 @@ class DialogueProcessor:
         return self.database_connector.get_book(name)
 
     def search_books(self):
+        """
+        Return array of (id, name) for books.
+        """
         if not self.database_connector:
             return None
         if len(self.current_authors)>0:
@@ -280,6 +314,7 @@ class DialogueProcessor:
         return self.database_connector.get_shops_by_specialties(self.shop_specifiers)
 
     def search_libraries_by_books(self):
+        # TODO FIX: rework so that previous step allows to select one book
         if not self.database_connector:
             return None
         if len(self.current_books)==0:
@@ -288,6 +323,7 @@ class DialogueProcessor:
         return list(libraries)
 
     def search_shops_by_books(self):
+        # TODO FIX: rework rework so that previous step allows to select one book
         if not self.database_connector:
             return None
         if len(self.current_books)==0:

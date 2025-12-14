@@ -24,10 +24,11 @@ class DatabaseConnector:
     #SEARCH
 
     def search_books_by_authors(self, authors):
+        """Return list of [book.id, book.name]"""
         if not self.conn: return []
 
         query = """
-                SELECT DISTINCT b.name
+                SELECT DISTINCT b.id, b.name
                 FROM book b
                          JOIN book_author ba ON b.id = ba.book
                          JOIN author a ON a.id = ba.author
@@ -58,12 +59,13 @@ class DatabaseConnector:
 
         with self.conn.cursor() as cur:
             cur.execute(full_query, params)
-            return [row[0] for row in cur.fetchall()]
+            return cur.fetchall() #[row[0] for row in cur.fetchall()]
 
     def search_books_by_genres(self, genres):
+        """Return list of [book.id, book.name]"""
         if not self.conn: return []
         query = """
-                SELECT DISTINCT b.name
+                SELECT DISTINCT b.id, b.name
                 FROM book b
                          JOIN book_genre bg ON b.id = bg.book
                          JOIN genre g ON g.id = bg.genre
@@ -71,7 +73,7 @@ class DatabaseConnector:
                 """
         with self.conn.cursor() as cur:
             cur.execute(query, (genres,))
-            return [row[0] for row in cur.fetchall()]
+            return cur.fetchall() #[row[0] for row in cur.fetchall()]
 
     def search_books_by_genres_or_authors(self, genres, authors):
 
@@ -206,6 +208,7 @@ class DatabaseConnector:
             return cur.fetchall()
 
     def get_book(self, name):
+        """return Book name, authors, genres, id"""
         if not self.conn: return None
         with self.conn.cursor() as cur:
             cur.execute("SELECT id, name FROM book WHERE name ILIKE %s", (name,))
@@ -224,7 +227,7 @@ class DatabaseConnector:
                         (book_id,))
             genres = [row[0] for row in cur.fetchall()]
 
-            return (book_real_name, authors, genres)
+            return (book_real_name, authors, genres, book_id)
 
     def get_genre_list(self):
         if not self.conn: return []

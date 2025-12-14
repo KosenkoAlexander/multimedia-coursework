@@ -42,4 +42,22 @@
     }
 </style>
 
+<script>
+    function makeFAW(bookId) {
+        fetch(`/make_faw/${bookId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // "X-CSRFToken": "x"
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log("FAW created!", data);
+                // use flashing?
+            })
+            .catch(err => console.error(err));
+    }
+</script>
+
 {% endif %}
