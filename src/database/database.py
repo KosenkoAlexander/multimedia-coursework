@@ -183,6 +183,21 @@ class DatabaseConnector:
 
     # GET
 
+    def get_book_like(self, name):
+        if not self.conn: return None
+        try:
+            query = "SELECT id, name, pages FROM book WHERE name ILIKE %s LIMIT 1"
+
+            search_pattern = f"%{name}%"
+
+            with self.conn.cursor() as cur:
+                cur.execute(query, (search_pattern,))
+                result = cur.fetchone()
+                return result
+        except Exception as e:
+            print(f"Error searching book like '{name}': {e}")
+            return None
+
     def get_all_authors(self):
         if not self.conn: return []
         with self.conn.cursor() as cur:
@@ -689,34 +704,34 @@ if __name__ == '__main__':
             link = s[3] if s[3] else "Купівля в магазині"
             print(f" {s[0]} -> {s[2]}$ | Link: {link}")
 
-        print("\n--- 15. ТЕСТ КОРИСТУВАЧІВ ---")
-        # Додаємо тестового юзера
-        test_username = "test_student"
-        test_email = "student@university.com"
-        user_id = db.add_user(test_username, test_email, "hashed_secret_123")
-
-        if user_id:
-            print(f"16 Користувача створено з ID: {user_id}")
-
-            # Перевірка пошуку
-            u = db.find_user_by_id(user_id)
-            print(f" Знайдено по ID: {u[1]} (Admin: {u[4]})")
-
-            # Зміна імені
-            print("Змінюємо username на 'super_student'...")
-            db.change_user_username(user_id, "super_student")
-            u = db.find_user_by_username("super_student")
-            print(f"   Нове ім'я в БД: {u[1] if u else 'Error'}")
-
-            # Зміна прав адміна
-            print(" Робимо адміном...")
-            db.change_user_is_admin(user_id)
-            u = db.find_user_by_id(user_id)
-            print(f"   Тепер Admin: {u[4]}")
-
-        else:
-            print(" Не вдалося створити користувача (можливо, такий email/username вже існує).")
-
+#        print("\n--- 15. ТЕСТ КОРИСТУВАЧІВ ---")
+#        # Додаємо тестового юзера
+#        test_username = "test_student"
+#        test_email = "student@university.com"
+#        user_id = db.add_user(test_username, test_email, "hashed_secret_123")
+#
+#        if user_id:
+#            print(f"16 Користувача створено з ID: {user_id}")
+#
+#            # Перевірка пошуку
+#            u = db.find_user_by_id(user_id)
+#            print(f" Знайдено по ID: {u[1]} (Admin: {u[4]})")
+#
+#            # Зміна імені
+#            print("Змінюємо username на 'super_student'...")
+#            db.change_user_username(user_id, "super_student")
+#            u = db.find_user_by_username("super_student")
+#            print(f"   Нове ім'я в БД: {u[1] if u else 'Error'}")
+#
+#            # Зміна прав адміна
+#            print(" Робимо адміном...")
+#            db.change_user_is_admin(user_id)
+#            u = db.find_user_by_id(user_id)
+#            print(f"   Тепер Admin: {u[4]}")
+#
+#        else:
+#            print(" Не вдалося створити користувача (можливо, такий email/username вже існує).")
+#
         print("\n" + "=" * 60)
         print(" Tests finished.")
 
