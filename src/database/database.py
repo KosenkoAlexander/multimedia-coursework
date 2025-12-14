@@ -292,6 +292,19 @@ class DatabaseConnector:
             cur.execute(query, (username,))
             return cur.fetchone()
 
+    def get_user_by_id(self, user_id):
+        if not self.conn: return None
+
+        query = """
+                SELECT id, username, email, password_hash, is_admin
+                FROM users
+                WHERE id = %s
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id,))
+            return cur.fetchone()
+
     # ADD
 
     def add_user(self, username, email, password_hash, is_admin=False):
@@ -496,6 +509,32 @@ class DatabaseConnector:
             self.conn.rollback()
             print(f"Error deleting author: {e}")
 
+
+    #UPDATE
+
+    def update_username(self, user_id, new_username):
+        if not self.conn: return False
+        try:
+            query = "UPDATE users SET username = %s WHERE id = %s"
+            with self.conn.cursor() as cur:
+                cur.execute(query, (new_username, user_id))
+                self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating username: {e}")
+            return False
+
+    def update_password(self, user_id, password_hash):
+        if not self.conn: return False
+        try:
+            query = "UPDATE users SET password_hash = %s WHERE id = %s"
+            with self.conn.cursor() as cur:
+                cur.execute(query, (password_hash, user_id))
+                self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating password: {e}")
+            return False
 # TEST
 if __name__ == '__main__':
 
