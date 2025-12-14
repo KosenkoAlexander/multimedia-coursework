@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="main-content">
+    <h3>Favorite Books List</h3>
+    <!-- adapted from `existing books list` -->
+    <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background-color: #ecf0f1; position: sticky; top: 0;">
+                    <!-- <th style="padding: 10px; text-align: left;">ID</th> -->
+                    <th style="padding: 10px; text-align: left;">Name</th>
+                    <!-- <th style="padding: 10px; text-align: left;">Pages</th> -->
+                    <th style="padding: 10px; text-align: left;">Authors</th>
+                    <!-- <th style="padding: 10px; text-align: left;">Subject</th> -->
+
+                    <th style="padding: 10px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in books %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 8px;">{{ book[1] }}</td>
+                    <td style="padding: 8px;">{{ book[3] | join(', ') }}</td>
+                    <td style="padding: 8px; text-align: right;">
+                        <form action="{{ url_for('toggle_favorite', book_id=book[0]) }}" method="POST"
+                            onsubmit="return confirm('Remove this book from favorites?');">
+                            <button type="submit"
+                                style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">
+                                Remove
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock %}

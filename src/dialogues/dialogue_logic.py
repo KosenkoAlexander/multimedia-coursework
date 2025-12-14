@@ -162,7 +162,7 @@ class DialogueProcessor:
                 'The following book'+('s were' if len(books)>1 else ' was')+' found: '+', '.join([b[1] for b in books[:self.max_told_items]]) +('and so on' if len(books)>self.max_told_items else '')+ ('. Select one' if len(books)>1 else '. Do you want me to search for it in libraries or shops?'),
                 Emotion.WAIT,
                 ['ID', 'Book'],
-                self._make_id_into_faw_link(books)
+                self._make_id_into_fav_button(books)
                 )
     
     def answer_books_by_genres_only(self):
@@ -182,22 +182,20 @@ class DialogueProcessor:
             'The following book'+('s were' if len(books)>1 else ' was')+' found: ' + ', '.join([b[1] for b in books[:self.max_told_items]]) + ('and so on' if len(books)>self.max_told_items else '') + ('. Select one' if len(books)>1 else '. Do you want me to serach for it in librarier or shops?'), 
             Emotion.WAIT,
             ['ID', 'Book'],
-            self._make_id_into_faw_link(books)
+            self._make_id_into_fav_button(books)
             )
     
     @staticmethod
-    def _make_id_into_faw_link(books):
+    def _make_id_into_fav_button(books):
         """
             Takes list of (id, name) fields of the books
-            Makes id into clickable "make_faw" link for current user
+            Utilized "toggle_favorite" endpoint and `chFav` function from table.html
         """
         def wrap_id(id):
             """dirty crutch"""
-            wrapper_form = f"""
-<form class="FawIdForm" action="{url_for("make_faw", book_id=id)}" method="post" style="display:inline">
-    <button type="submit">{id}</button>
-</form>"""
-            return Markup(f"<button type='button' onclick='makeFAW({id})'>{id}</button>")
+            # TODO consider changing search func to return {id name favorite}
+            # and if favorite, add ' active' to class string here to highligh buttons with gold
+            return Markup(f"<button class='fav-btn' type='button' onclick='chFav(this, {id})'>{id}</button>")
         return [
             [wrap_id(id), name] for (id, name) in books
         ]

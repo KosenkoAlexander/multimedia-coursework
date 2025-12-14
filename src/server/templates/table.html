@@ -40,21 +40,28 @@
     tbody tr:hover {
         background-color: #f1f2f6;
     }
+
+    .fav-btn.active {
+        background-color: gold;
+    }
 </style>
 
 <script>
-    function makeFAW(bookId) {
-        fetch(`/make_faw/${bookId}`, {
+    function chFav(btn, bookId) {
+        fetch(`/toggle_favorite/${bookId}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 // "X-CSRFToken": "x"
             },
+            body: JSON.stringify({ from_table: true })
         })
             .then(response => response.json())
             .then(data => {
-                console.log("FAW created!", data);
-                // use flashing?
+                if (data.is_favorite || !data.is_favorite) {
+                    // TODO render buttons with actual fav status?
+                    btn.classList.toggle("active");
+                }
             })
             .catch(err => console.error(err));
     }

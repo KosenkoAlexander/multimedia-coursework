@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict iVBvQRJrTB2E71amujsQTMJQblVcnMRL12S8LCqMxVVE2xPwWBVNat6qglY5hV2
+\restrict U4Vg6dA0qWlAvSaRpXCm5pgt8z4JJzaOPt6ODtbwXrRdhyCrwvvwDXwuU5qtHQW
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -144,6 +144,19 @@ CREATE TABLE public.book_shop (
 
 
 ALTER TABLE public.book_shop OWNER TO postgres;
+
+--
+-- Name: favorites; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.favorites (
+    user_id integer NOT NULL,
+    book_id integer NOT NULL,
+    added_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.favorites OWNER TO postgres;
 
 --
 -- Name: genre; Type: TABLE; Schema: public; Owner: postgres
@@ -523,6 +536,16 @@ COPY public.book_shop (book, shop, price, link) FROM stdin;
 
 
 --
+-- Data for Name: favorites; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.favorites (user_id, book_id, added_at) FROM stdin;
+1	2	2025-12-14 01:24:45.707863
+1	3	2025-12-14 01:24:45.707863
+\.
+
+
+--
 -- Data for Name: genre; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -603,6 +626,8 @@ COPY public.specialty (id, name) FROM stdin;
 --
 
 COPY public.users (id, username, email, password_hash, is_admin) FROM stdin;
+1	user1	user1@gmail.com	scrypt:32768:8:1$CkhpdrBwtpDtAUY9$519d84bc6b6c37634757ee12a4f732ad6d6f0d604b3bb9995b18920e2d4ffc3ab9b5dd30af931fb9ed90317dfa7291ecf15a8d6b22947dd69de59d0e08ce819d	t
+9	user6	user6@gmail.com	scrypt:32768:8:1$Izm658EU8Wt4dhHl$d6daf06757ae3ab3055e28d32c572edd451dfcbd0eb567221d0c909a80c5dd89762bdbda9d5334a947dacb3f76c92c4e5aee5e71cca26a82d2a32a33871b4158	f
 \.
 
 
@@ -610,14 +635,14 @@ COPY public.users (id, username, email, password_hash, is_admin) FROM stdin;
 -- Name: author_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.author_id_seq', 12, true);
+SELECT pg_catalog.setval('public.author_id_seq', 14, true);
 
 
 --
 -- Name: book_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.book_id_seq', 12, true);
+SELECT pg_catalog.setval('public.book_id_seq', 15, true);
 
 
 --
@@ -652,7 +677,7 @@ SELECT pg_catalog.setval('public.specialty_id_seq', 5, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 1, false);
+SELECT pg_catalog.setval('public.users_id_seq', 9, true);
 
 
 --
@@ -669,6 +694,14 @@ ALTER TABLE ONLY public.author
 
 ALTER TABLE ONLY public.book
     ADD CONSTRAINT book_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: favorites favorites_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.favorites
+    ADD CONSTRAINT favorites_pkey PRIMARY KEY (user_id, book_id);
 
 
 --
@@ -776,6 +809,22 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: favorites favorites_book_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.favorites
+    ADD CONSTRAINT favorites_book_id_fkey FOREIGN KEY (book_id) REFERENCES public.book(id) ON DELETE CASCADE;
+
+
+--
+-- Name: favorites favorites_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.favorites
+    ADD CONSTRAINT favorites_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: book_author fk_ba_author; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -875,5 +924,5 @@ ALTER TABLE ONLY public.shop_specialty
 -- PostgreSQL database dump complete
 --
 
-\unrestrict iVBvQRJrTB2E71amujsQTMJQblVcnMRL12S8LCqMxVVE2xPwWBVNat6qglY5hV2
+\unrestrict U4Vg6dA0qWlAvSaRpXCm5pgt8z4JJzaOPt6ODtbwXrRdhyCrwvvwDXwuU5qtHQW
 

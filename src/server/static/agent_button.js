@@ -104,6 +104,10 @@ import { toggleMouth } from "./threejs_container.js";
 let utterance;
 
 function speakText(text, emotion = "Talk") {
+    if (!text) {
+        agentApi[AGENTAPI.NO]();
+        return;
+    }
     const new_state = Object.keys(agentApi).includes(emotion) ? emotion : AGENTAPI.TALK;
     // console.log(new_state);
     if ('speechSynthesis' in window & !agentButton.disabled) {

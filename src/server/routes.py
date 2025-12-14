@@ -155,12 +155,7 @@ def agent():
             return jsonify({'status':'error', 'message':'Expected "text" key in JSON'}), 400
     else:
         return jsonify({'status':'error', 'message':'Expected JSON'}), 400
-
-@login_required
-@app.route('/make_faw/<int:book_id>', methods=['POST'])
-def make_faw(book_id: int):
-    # TODO call db with current user id and passed book id to make the book faw
-    return jsonify({'status': 'ok'}), 200
+    
 
 @login_required
 @app.route('/paginated/next', methods=['GET', 'POST'])
@@ -182,14 +177,20 @@ def paginated_prev():
 @app.route('/toggle_favorite/<int:book_id>', methods=['POST'])
 @login_required
 def toggle_favorite(book_id):
+    data = request.get_json(silent=True) or {}
+    from_table = data.get('from_table')
+    is_favorite = False
     if db.is_book_favorite(current_user.id, book_id):
         db.remove_favorite(current_user.id, book_id)
-        flash('Removed from favorites', 'info')
+        if not from_table: flash('Removed from favorites', 'info')
     else:
         db.add_favorite(current_user.id, book_id)
-        flash('Added to favorites', 'success')
-
-    return redirect(request.referrer or url_for('index'))
+        is_favorite = True
+        if not from_table: flash('Added to favorites', 'success')
+    # return  redirect(request.referrer or url_for('index'))'
+    if from_table:
+        return jsonify({'is_favorite': is_favorite}), 200
+    return redirect(request.referrer)
 
 
 @app.route('/my_favorites')

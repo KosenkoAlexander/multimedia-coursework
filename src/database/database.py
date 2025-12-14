@@ -283,10 +283,19 @@ class DatabaseConnector:
             return cur.fetchall()
 
     def get_all_books(self):
-        #Повертає список всіх книг для відображення у формі
+        """Retrun book id, name, authors for admin page table"""
         if not self.conn: return []
+        query = """
+                SELECT
+                    b.id,
+                    b.name,
+                    array_agg(DISTINCT a.name || ' ' || a.surname) AS authors
+                FROM book b
+                LEFT JOIN book_author ba ON ba.book = b.id
+                LEFT JOIN author a ON a.id = ba.author
+                """
         with self.conn.cursor() as cur:
-            cur.execute("SELECT id, name FROM book ORDER BY name")
+            cur.execute(query)
             return cur.fetchall()
 
     def get_all_users(self):
@@ -558,24 +567,52 @@ class DatabaseConnector:
 #FAVOURITES
 
     def add_favorite(self, user_id, book_id):
-        query = "INSERT OR IGNORE INTO favorites (user_id, book_id) VALUES (?, ?)"
+        query = "INSERT INTO favorites (user_id, book_id) VALUES (%s, %s) ON CONFLICT (user_id, book_id) DO NOTHING"
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id, book_id))
             self.conn.commit()
 
     def remove_favorite(self, user_id, book_id):
-        query = "DELETE FROM favorites WHERE user_id = ? AND book_id = ?"
+        query = "DELETE FROM favorites WHERE user_id = %s AND book_id = %s"
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id, book_id))
             self.conn.commit()
 
     def get_user_favorites(self, user_id):
-        #Отримує список всіх улюблених книг користувача з деталями про книгу
+        """Return 
+        - id
+        - name
+        - page count
+        - authors
+        - subjects
+
+        For all books
+        that are favorite for the fiven user
+        """
+
         query = """
-                SELECT b.id, b.name, b.pages, b.cover_image
-                FROM books b
+                SELECT b.id, b.name, b.pages
+                -- , b.cover_image
+                FROM book b
                          JOIN favorites f ON b.id = f.book_id
-                WHERE f.user_id = ? \
+                WHERE f.user_id = %s \
+                """
+        query = """
+                SELECT
+                    b.id,
+                    b.name,
+                    b.pages,
+                    array_agg(DISTINCT a.name || ' ' || a.surname) AS authors,
+                    array_agg(DISTINCT g.name) AS genres
+                FROM book b
+                JOIN favorites f ON f.book_id = b.id
+                LEFT JOIN book_author ba ON ba.book = b.id
+                LEFT JOIN author a ON a.id = ba.author
+                LEFT JOIN book_genre bg ON bg.book = b.id
+                LEFT JOIN genre g ON g.id = bg.genre
+                WHERE f.user_id = %s
+                GROUP BY b.id, b.name, b.pages
+                ORDER BY b.name;
                 """
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id,))
@@ -583,7 +620,7 @@ class DatabaseConnector:
 
     def is_book_favorite(self, user_id, book_id):
         #Перевіряє, чи є конкретна книга в улюблених
-        query = "SELECT 1 FROM favorites WHERE user_id = ? AND book_id = ?"
+        query = "SELECT 1 FROM favorites WHERE user_id = %s AND book_id = %s"
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id, book_id))
             return cur.fetchone() is not None
