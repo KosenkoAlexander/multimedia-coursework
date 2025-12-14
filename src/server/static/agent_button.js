@@ -104,6 +104,7 @@ import { toggleMouth } from "./threejs_container.js";
 let utterance;
 
 function speakText(text, emotion = "Talk") {
+    const RATE = 1.5;
     if (!text) {
         agentApi[AGENTAPI.NO]();
         return;
@@ -113,6 +114,7 @@ function speakText(text, emotion = "Talk") {
     if ('speechSynthesis' in window & !agentButton.disabled) {
         utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
+        utterance.rate = RATE;
         speechSynthesis.speak(utterance);
 
         utterance.onstart = () => {

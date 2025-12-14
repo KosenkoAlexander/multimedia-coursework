@@ -6,6 +6,7 @@ from flask_login import current_user, login_user, login_required, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from server.custom_paginated import CustomPaginated
 
+
 @app.route('/')
 @login_required
 def index():
@@ -14,9 +15,11 @@ def index():
     # if 'paginated' not in session or session['paginated'] is None:
     #     session['paginated'] = CustomPaginated(['A', 'B'], [['a1','b1'], ['a2','b2'], ['a3','b3']], 2).to_dict()
     #     session['hints'] = ['Hint A', 'Hint B', 'Hint C']
+    if 'paginated' not in session:
+        session['paginated'] = None
     paginated = CustomPaginated.from_dict(session['paginated'])
     hints = session['hints'] if 'hints' in session else None
-    print(session['paginated'])
+    # print(session['paginated'])
     return render_template('index.html', form=form, paginated=paginated, is_admin=current_user.is_admin, hints=hints)
 
 

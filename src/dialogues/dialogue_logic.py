@@ -35,7 +35,7 @@ class DialogueProcessor:
     def process_initial(self, text):
         text_l = text.lower()
         words = re.findall(word_regex, text_l)
-        default_reply = 'Hello, how can I assist you? Say help for a quick tutorial. If you have problems with speech input, check a checkbox to switch to text'
+        default_reply = 'Hello, how can I assist you? Say help for a quick tutorial.'
         #default_table_h = ['Basic dialogue options']
         #default_table_b = [['Find [genres] book [authored by] [name is]'],
         #                   ['Find library'],
@@ -128,7 +128,7 @@ class DialogueProcessor:
                 return self.format_as_dict('Database connection issues, sorry', Emotion.NO)
             return self.format_as_dict('The following library and shop specialties are present in my database: '+', '.join(specialties[:self.max_told_items])+('and so on' if len(specialties)>self.max_told_items else ''), Emotion.TELL, ['Specialty'], [[s] for s in specialties])
 
-        return self.format_as_dict('Hello, your request was not recognised. If you need help, say help.', Emotion.NO)
+        return self.format_as_dict('Your request was not recognised. If you need help, say help.', Emotion.NO)
 
     def process_clarify_authors(self, text):
         text_l = text.lower()
@@ -375,7 +375,7 @@ class DialogueProcessor:
         self.book_specifiers = ''
         self.current_authors = []
         self.max_told_items = max_told_items
-        self.processor_hints = {self.process_initial:['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] library', 'Find [<specialties>] shop', 'List genres', 'List specialties'],
+        self.processor_hints = {self.process_initial:['If you have problems with speech input, check a checkbox to switch to text', 'Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] library', 'Find [<specialties>] shop', 'List genres', 'List specialties'],
                                 self.process_default:['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] library', 'Find [<specialties>] shop', 'List genres', 'List specialties'],
                                 self.process_find_book:['Author is <name and/or surname>','Genres are <genres>','Name is <name>', 'Cancel'],
                                 self.process_find_library:['<specialties>', 'Cancel'],

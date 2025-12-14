@@ -293,6 +293,8 @@ class DatabaseConnector:
                 FROM book b
                 LEFT JOIN book_author ba ON ba.book = b.id
                 LEFT JOIN author a ON a.id = ba.author
+                GROUP BY b.id, b.name
+                ORDER BY b.name;
                 """
         with self.conn.cursor() as cur:
             cur.execute(query)
