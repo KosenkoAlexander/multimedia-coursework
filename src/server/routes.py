@@ -1,9 +1,9 @@
-from flask import render_template, request, jsonify, redirect, url_for, session
-from server import app, db
+from flask import render_template, request, jsonify, redirect, url_for, session, flash
+from server import app, db, login_manager
 from server.forms import MainButtonsForm, LoginForm, RegistrationForm, ProfileUsernameForm, ProfilePasswordForm
 from server.user import User
 from flask_login import current_user, login_user, login_required, logout_user
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from server.custom_paginated import CustomPaginated
 
 @app.route('/')
@@ -28,22 +28,44 @@ def start():
     else:
         return jsonify(status = 'error', message = 'no data'), 400
 
+@login_manager.user_loader
+def load_user(user_id):
+    user_data = db.get_user_by_id(user_id)
+    if user_data:
+        # user_data = (id, username, email, password_hash, is_admin)
+        return User(id=user_data[0], username=user_data[1], email=user_data[2], password_hash=user_data[3], is_admin=user_data[4])
+    return None
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
+
     form = LoginForm()
+
     if form.validate_on_submit():
-        user = User(0, 'test_username', 'test_email', generate_password_hash('pass')) #TODO replace with call to DB
-        if user is None or not user.check_password(form.password.data):
-            #TODO add response
-            return render_template('login.html', form=form, login_error = 'Wrong username or password')#redirect(url_for('login'))
-        login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not next_page:
-            next_page = url_for('index')
-        return redirect(next_page)
+        user_data = db.get_user_by_username(form.username.data)
+
+        if user_data:
+            user = User(
+                id=user_data[0],
+                username=user_data[1],
+                email=user_data[2],
+                password_hash=user_data[3],
+                is_admin=user_data[4]
+            )
+
+            if check_password_hash(user.password_hash, form.password.data):
+                login_user(user, remember=form.remember_me.data)
+
+                next_page = request.args.get('next')
+                if not next_page or not next_page.startswith('/'):
+                    next_page = url_for('index')
+                return redirect(next_page)
+
+        return render_template('login.html', form=form, login_error='Wrong username or password')
+
     return render_template('login.html', form=form)
 
 
@@ -51,25 +73,62 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
+
     form = RegistrationForm()
+
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data, password_hash=generate_password_hash(form.password.data))
-        return redirect(url_for('login'))
+        if db.get_user_by_username(form.username.data):
+            return render_template('register.html', form=form, registration_error='Username already exists')
+
+        hashed_password = generate_password_hash(form.password.data)
+        new_user_id = db.add_user(form.username.data, form.email.data, hashed_password)
+
+        if new_user_id:
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
+        else:
+            return render_template('register.html', form=form, registration_error='Database error')
+
     return render_template('register.html', form=form)
+
 
 @login_required
 @app.route('/profile', methods=['GET', 'POST'])
+@login_required
 def profile():
     form_username = ProfileUsernameForm()
     form_password = ProfilePasswordForm()
-    if form_username.validate_on_submit():
-        #TODO
-        return render_template('profile.html', form_username=form_username, form_password=form_password)
-    if form_password.validate_on_submit():
-        #TODO
-        return render_template('profile.html', form_username=form_username, form_password=form_password)
-    return render_template('profile.html', form_username=form_username, form_password=form_password)
 
+    if 'username' in request.form and form_username.validate_on_submit():
+        new_username = form_username.username.data
+
+        existing_user = db.get_user_by_username(new_username)
+        if existing_user and existing_user[0] != current_user.id:
+            flash('Це ім\'я вже зайняте іншим користувачем.', 'error')
+        else:
+            if db.update_username(current_user.id, new_username):
+                flash('Ім\'я успішно оновлено!', 'success')
+                return redirect(url_for('profile'))
+            else:
+                flash('Помилка бази даних.', 'error')
+
+    if 'password' in request.form and form_password.validate_on_submit():
+        hashed_pw = generate_password_hash(form_password.password.data)
+
+        if db.update_password(current_user.id, hashed_pw):
+            flash('Пароль успішно змінено!', 'success')
+            return redirect(url_for('profile'))
+        else:
+            flash('Помилка при зміні пароля.', 'error')
+
+    if request.method == 'GET':
+        form_username.username.data = current_user.username
+
+    return render_template(
+        'profile.html',
+        form_username=form_username,
+        form_password=form_password
+    )
 @app.route('/logout')
 def logout():
     logout_user()
@@ -119,5 +178,24 @@ def paginated_prev():
     session['paginated'] = paginated.to_dict()
     return render_template('table.html', paginated=paginated)
 
+
+@app.route('/toggle_favorite/<int:book_id>', methods=['POST'])
+@login_required
+def toggle_favorite(book_id):
+    if db.is_book_favorite(current_user.id, book_id):
+        db.remove_favorite(current_user.id, book_id)
+        flash('Removed from favorites', 'info')
+    else:
+        db.add_favorite(current_user.id, book_id)
+        flash('Added to favorites', 'success')
+
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/my_favorites')
+@login_required
+def my_favorites():
+    fav_books = db.get_user_favorites(current_user.id)
+    return render_template('favorites.html', books=fav_books)
 
 from server import routes_admin

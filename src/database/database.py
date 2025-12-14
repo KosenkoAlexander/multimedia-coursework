@@ -295,6 +295,19 @@ class DatabaseConnector:
             cur.execute(query, (username,))
             return cur.fetchone()
 
+    def get_user_by_id(self, user_id):
+        if not self.conn: return None
+
+        query = """
+                SELECT id, username, email, password_hash, is_admin
+                FROM users
+                WHERE id = %s
+                """
+
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id,))
+            return cur.fetchone()
+
     # ADD
 
     def add_user(self, username, email, password_hash, is_admin=False):
@@ -498,6 +511,67 @@ class DatabaseConnector:
         except Exception as e:
             self.conn.rollback()
             print(f"Error deleting author: {e}")
+
+
+    #UPDATE
+
+    def update_username(self, user_id, new_username):
+        if not self.conn: return False
+        try:
+            query = "UPDATE users SET username = %s WHERE id = %s"
+            with self.conn.cursor() as cur:
+                cur.execute(query, (new_username, user_id))
+                self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating username: {e}")
+            return False
+
+    def update_password(self, user_id, password_hash):
+        if not self.conn: return False
+        try:
+            query = "UPDATE users SET password_hash = %s WHERE id = %s"
+            with self.conn.cursor() as cur:
+                cur.execute(query, (password_hash, user_id))
+                self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating password: {e}")
+            return False
+
+
+#FAVOURITES
+
+    def add_favorite(self, user_id, book_id):
+        query = "INSERT OR IGNORE INTO favorites (user_id, book_id) VALUES (?, ?)"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, book_id))
+            self.conn.commit()
+
+    def remove_favorite(self, user_id, book_id):
+        query = "DELETE FROM favorites WHERE user_id = ? AND book_id = ?"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, book_id))
+            self.conn.commit()
+
+    def get_user_favorites(self, user_id):
+        #Отримує список всіх улюблених книг користувача з деталями про книгу
+        query = """
+                SELECT b.id, b.name, b.pages, b.cover_image
+                FROM books b
+                         JOIN favorites f ON b.id = f.book_id
+                WHERE f.user_id = ? \
+                """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id,))
+            return cur.fetchall()
+
+    def is_book_favorite(self, user_id, book_id):
+        #Перевіряє, чи є конкретна книга в улюблених
+        query = "SELECT 1 FROM favorites WHERE user_id = ? AND book_id = ?"
+        with self.conn.cursor() as cur:
+            cur.execute(query, (user_id, book_id))
+            return cur.fetchone() is not None
 
 # TEST
 if __name__ == '__main__':
