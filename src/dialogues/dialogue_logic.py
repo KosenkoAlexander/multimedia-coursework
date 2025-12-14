@@ -59,13 +59,14 @@ class DialogueProcessor:
         return self.process_default(text)
         
     def process_default(self, text):
+        self.book_specifiers = ''
+        self.current_authors = []
         text_l = text.lower()
-        #default_hints = ['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] libraries', 'Find [<specialties>] shops', 'List genres', 'List specialties', '... and similar']
         if re.match('goodbye.*', text_l):
             self.goodbye = True
             return self.format_as_dict('Goodbye', Emotion.TELL)
         elif book_desc:=re.search(r'(?:\bfind\b|\bsearch\s+for\b)(.*)(?:book)(.*)', text_l):
-            self.book_specifiers = re.findall(word_regex, book_desc.group(1))
+            self.book_specifiers = book_desc.group(1).strip()
             book_description = book_desc.group(2)
             self.current_authors = []
             if authored := re.search(r'(?:\bauthored\s+by\b|\bwith\b.*\bauthors)(.*)', book_description):
@@ -136,7 +137,7 @@ class DialogueProcessor:
             return self.format_as_dict('Cancelled', Emotion.YES)
         potential_authors = [s for s in re.findall(word_regex, text_l) if s!='and']
         if len(potential_authors)==0:
-            return self.format_as_dict('Input unclear again, please repeat authors or cancel search', Emotion.ASK)
+            return self.format_as_dict('Input unclear again, please repeat authors or cancel', Emotion.ASK)
         return self.answer_for_nonempty_potential_authors(potential_authors)
 
     def answer_for_nonempty_potential_authors(self, potential_authors):
@@ -150,11 +151,15 @@ class DialogueProcessor:
             self.current_processor = self.process_default
             return self.format_as_dict('Seems like no books from this author is in database', Emotion.NO)
         else:
-            self.current_processor = self.process_after_books_found
             # books = [list(b) for b in books]
             self.current_books = books
+            if len(books)>1:
+                self.current_processor = self.process_after_books_found
+            else:
+                self.current_book = books[0][1]
+                self.current_processor = self.process_after_book_found
             return self.format_as_dict(
-                'The following books were found: '+', '.join([b[1] for b in books[:self.max_told_items]]) +('and so on' if len(books)>self.max_told_items else '')+ '. Do you want me to search for them in libraries or shops?',
+                'The following book'+('s were' if len(books)>1 else ' was')+' found: '+', '.join([b[1] for b in books[:self.max_told_items]]) +('and so on' if len(books)>self.max_told_items else '')+ ('. Select one' if len(books)>1 else '. Do you want me to search for it in libraries or shops?'),
                 Emotion.WAIT,
                 ['ID', 'Book'],
                 self._make_id_into_faw_link(books)
@@ -168,9 +173,13 @@ class DialogueProcessor:
             self.current_processor = self.process_default
             return self.format_as_dict('Seems like there are no books corresponding to the description', Emotion.NO)
         self.current_books = books
-        self.current_processor = self.process_after_books_found
+        if len(books)>1:
+            self.current_processor = self.process_after_books_found
+        else:
+            self.current_book = books[0][1]
+            self.current_processor = self.process_after_book_found
         return self.format_as_dict(
-            'The following books were found: ' + ', '.join([b[1] for b in books[:self.max_told_items]]) + ('and so on' if len(books)>self.max_told_items else '') + '. Do you want me to serach for them in librarier or shops?', 
+            'The following book'+('s were' if len(books)>1 else ' was')+' found: ' + ', '.join([b[1] for b in books[:self.max_told_items]]) + ('and so on' if len(books)>self.max_told_items else '') + ('. Select one' if len(books)>1 else '. Do you want me to serach for it in librarier or shops?'), 
             Emotion.WAIT,
             ['ID', 'Book'],
             self._make_id_into_faw_link(books)
@@ -235,7 +244,7 @@ class DialogueProcessor:
             else:
                 return self.answer_for_nonempty_potential_authors(potential_authors)
         elif genre_desc:=re.search(r'(?:genres?)(?:.*is|.*are)?(.*)', text_l):
-            self.book_specifiers = re.findall(word_regex, genre_desc.group(1))
+            self.book_specifiers = genre_desc.group(1).strip()
             if len(self.book_specifiers)>0:
                 return self.answer_books_by_genres_only()
         return self.format_as_dict('Description is not recognisable, please say book genres, name or authors, or say cancel if you want to stop', Emotion.WAIT)
@@ -245,12 +254,12 @@ class DialogueProcessor:
         if re.match('cancel', text_l):
             self.current_processor = self.process_default
             return self.format_as_dict('Canceling', Emotion.YES)
-        book = None#TODO replace with db call
+        book = self.database_connector.get_book_like(text_l)
         if not book:
-            return self.format('Name not clear. Please repeat or cancel', Emotion.NO)
-        self.current_processor = self.process_after_books_found
-        self.current_book = book[0]
-        return self.format_as_dict('Book with name '+book[0]+' recognised. Would you like to search for it in shops or libraries?', Emotion.ASK, ['Name', 'Authors', 'Genres'], [[book[0], ', '.join(book[1]), ', '.join(book[2])]])
+            return self.format_as_dict('Name not clear. Please repeat or cancel', Emotion.NO)
+        self.current_processor = self.process_after_book_found
+        self.current_book = book[1]
+        return self.format_as_dict('Book with name '+book[1]+' recognised. Would you like to search for it in shops or libraries?', Emotion.ASK, ['Name', 'Pages'], [[book[1], book[2]]])
 
     def process_after_book_found(self, text):
         text_l = text.lower()
@@ -263,7 +272,7 @@ class DialogueProcessor:
                 return self.format_as_dict('Stopping search', Emotion.YES)
             else:
                 self.current_processor = self.process_after_book_found
-                return self.format_as_dict('Request not recognised', Emotion.NO)
+                return self.format_as_dict('Request not recognised, say in libraries, in shops, both, yes or no', Emotion.NO)
         num_told = 0
         places = []
         if in_libraries:
@@ -307,7 +316,10 @@ class DialogueProcessor:
         if len(self.current_authors)>0:
             books = self.database_connector.search_books_by_authors(self.current_authors)
         elif len(self.book_specifiers)>0:
-            books = self.database_connector.search_books_by_genres(self.book_specifiers)
+            genres = self.get_all_genres()
+            specifiers = self.book_specifiers.lower()
+            genres_to_search = [g for g in genres if re.search(g.lower(), specifiers)]
+            books = self.database_connector.search_books_by_genres(genres_to_search)
         else:
             books = []
         return books
@@ -362,7 +374,7 @@ class DialogueProcessor:
         self.current_books = []
         self.current_book = None
         self.goodbye = False
-        self.book_specifiers = []
+        self.book_specifiers = ''
         self.current_authors = []
         self.max_told_items = max_told_items
         self.processor_hints = {self.process_initial:['Find [<genres>] book [authored by <name and/or surname>] [name is <name>]', 'Find [<specialties>] library', 'Find [<specialties>] shop', 'List genres', 'List specialties'],
