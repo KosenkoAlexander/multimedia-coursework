@@ -191,3 +191,5 @@ def toggle_favorite(book_id):
 def my_favorites():
     fav_books = db.get_user_favorites(current_user.id)
     return render_template('favorites.html', books=fav_books)
+
+from server import routes_admin
