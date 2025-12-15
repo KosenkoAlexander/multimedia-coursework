@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, StringField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms import SubmitField, StringField, PasswordField, BooleanField, SelectField, SelectMultipleField
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Optional
 
 class MainButtonsForm(FlaskForm):
     start = SubmitField('start')
@@ -35,3 +35,35 @@ class ProfilePasswordForm(FlaskForm):
     password = PasswordField('New password', validators=[DataRequired()])
     password2 = PasswordField('Repeat new password', validators=[DataRequired(), EqualTo('password')])
     submit_password = SubmitField('Change')
+
+class BookForm(FlaskForm):
+    name = StringField(
+        'Name',
+        validators=[DataRequired()]
+    )
+        
+    authors = SelectMultipleField(
+        'Authors',
+        coerce=int,
+        validators=[Optional()]
+    )
+
+    genres = SelectMultipleField(
+        'Genres',
+        coerce=int,
+        validators=[Optional()]
+    )
+
+    shops = SelectMultipleField(
+        'Shop',
+        coerce=int,
+        validators=[Optional()]
+    )
+
+    libraries = SelectMultipleField(
+        'Library',
+        coerce=int,
+        validators=[Optional()]
+    )
+
+    submit = SubmitField('Save')

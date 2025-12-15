@@ -1,11 +1,13 @@
 from flask import render_template, redirect, url_for, request, flash
 from server import app, db
+from server.forms import BookForm
 from flask_login import current_user, login_required
 from server.user import User
 from server.custom_paginated import CustomPaginated
 from werkzeug.security import generate_password_hash
 
-@app.route('/admin')
+
+@app.route('/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
     if not current_user.is_admin:
@@ -18,8 +20,33 @@ def admin():
     books = db.get_all_books()
     users = db.get_all_users()
     active_tab = request.args.get('tab', 'add-book')
+    
+    form = BookForm() 
+
+    form.authors.choices = [(a[0], f"{a[1]} {a[2]}") for a in authors]
+    form.genres.choices = [(g[0], g[1]) for g in genres]
+    form.shops.choices = [(s[0], s[1]) for s in shops]
+    form.libraries.choices = [(l[0], l[1]) for l in libraries]
+
+    book_id = request.args.get('book_id')
+    if form.validate_on_submit():
+        add_book(form, book_id)
+        return redirect(url_for("admin", tab='add-book'))
+
+    book_id = request.args.get("book_id", type=int)
+    if book_id:
+        book_name, authors_ids, genres_ids, shops_ids, libraries_ids = db.get_book_magic(book_id)
+        # print(db.get_book_magic(book_id))
+        if book_name:
+            # this is the price of no ORM
+            form.name.data = book_name
+            form.authors.data = authors_ids
+            form.genres.data =  genres_ids
+            form.shops.data = shops_ids
+            form.libraries.data = libraries_ids
 
     return render_template('admin.html',
+                           form = form,
                            authors=authors,
                            genres=genres,
                            shops=shops,
@@ -28,50 +55,33 @@ def admin():
                            users=users,
                            active_tab=active_tab)
 
-@app.route('/add_book', methods=['POST'])
-@login_required
-def add_book():
-    if not current_user.is_admin:
-        return redirect(url_for('index'))
 
+# @app.route('/add_book', methods=['POST'])
+# @login_required
+def add_book(form: BookForm, book_id):  # book id = None if new book
     try:
-        name = request.form.get('name')
-        pages = int(request.form.get('pages'))
+        book_name = form.name.data
+        authors_ids = form.authors.data
+        genres_ids = form.genres.data
+        shops_ids = form.shops.data
+        libraries_ids = form.libraries.data
 
-        authors_ids = [int(x) for x in request.form.getlist('authors')]
-        genres_ids = [int(x) for x in request.form.getlist('genres')]
+        if not book_id:
+            # New book
+            book_id = db.create_book(book_name, 0)  # pages literally make no sence. substitute with 0 for now
+            if not book_id:
+                flash('Error', 'error')
+                return           
 
-        location_type = request.form.get('location_type')  # 'none', 'shop', 'library'
-        link_url = request.form.get('link')
-        if not link_url or link_url.strip() == "":
-            link_url = None
+        db.change_book_magic(book_id, book_name, authors_ids, genres_ids, shops_ids, libraries_ids)
+        # db.add_book_to_shop
 
-        book_id = db.create_book(name, pages)
-
-        if book_id:
-            db.link_authors_to_book(book_id, authors_ids)
-            db.link_genres_to_book(book_id, genres_ids)
-
-            if location_type == 'shop':
-                shop_id = int(request.form.get('shop_id'))
-                price_val = request.form.get('price')
-                price = float(price_val) if price_val else 0.0
-
-                db.add_book_to_shop(book_id, shop_id, price, link_url)
-
-            elif location_type == 'library':
-                library_id = int(request.form.get('library_id'))
-                db.add_book_to_library(book_id, library_id, link_url)
-
-            flash(f'The book "{name}" added successfully!', 'success')
-        else:
-            flash('Error', 'error')
-
+        flash(f'The book "{book_name}" added successfully!', 'success')
+        
     except Exception as e:
         flash(f'Error: {e}', 'error')
         print(f"DEBUG ERROR: {e}")
 
-    return redirect(url_for('admin', tab='add-book'))
 
 @app.route('/add_author', methods=['POST'])
 @login_required

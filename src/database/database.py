@@ -1,4 +1,6 @@
 import os
+import random
+from urllib import parse
 import psycopg2
 
 class DatabaseConnector:
@@ -421,11 +423,20 @@ class DatabaseConnector:
             self.conn.rollback()
             print(f"Error toggling admin status: {e}")
 
+    def change_book_name(self, id, new_name):
+        query = "UPDATE book SET name = %s WHERE id = %s"
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, (new_name, id))
+                self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error toggling admin status: {e}")
 
     # CREATE
 
     def create_book(self, name, pages):
-        #Створює книгу і повертає її ID
+        """Return id"""
         if not self.conn: return None
         try:
             with self.conn.cursor() as cur:
@@ -437,7 +448,7 @@ class DatabaseConnector:
             return None
 
     def create_author(self, name, surname):
-        #Створює автора і повертає його ID
+        """Return id"""
         if not self.conn: return None
         try:
             with self.conn.cursor() as cur:
@@ -589,7 +600,7 @@ class DatabaseConnector:
         - subjects
 
         For all books
-        that are favorite for the fiven user
+        that are favorite for the given user
         """
 
         query = """
@@ -626,6 +637,93 @@ class DatabaseConnector:
         with self.conn.cursor() as cur:
             cur.execute(query, (user_id, book_id))
             return cur.fetchone() is not None
+        
+# UPDATE
+
+    def get_book_magic(self, book_id):
+        """Return book_name, authors_ids, genres_ids, shops_ids, libraries_ids"""
+        # this is the price of no ORM
+        with self.conn.cursor() as cur:
+            query = "SELECT b.name FROM book b WHERE b.id = %s;"
+            cur.execute(query, (book_id,))
+            book_name = cur.fetchone()
+            if not book_name:
+                return "", [], [], [], []
+            else:
+                book_name = book_name[0]
+            
+            query = """
+            SELECT array_agg(ba.author)
+            FROM book_author ba
+            WHERE ba.book = %s
+            """
+            cur.execute(query, (book_id,))
+            authors_ids = cur.fetchall()[0][0]
+
+            query = """
+            SELECT array_agg(bg.genre)
+            FROM book_genre bg
+            WHERE bg.book = %s
+            """
+            cur.execute(query, (book_id,))
+            genres_ids = cur.fetchall()[0][0]
+
+            query = """
+            SELECT array_agg(bs.shop)
+            FROM book_shop bs
+            WHERE bs.book = %s
+            """
+            cur.execute(query, (book_id,))
+            shops_ids = cur.fetchall()[0][0]
+
+            query = """
+            SELECT array_agg(bl.library)
+            FROM book_library bl
+            WHERE bl.book = %s
+            """
+            cur.execute(query, (book_id,))
+            libraries_ids = cur.fetchall()[0][0]
+
+        return book_name, authors_ids, genres_ids, shops_ids, libraries_ids
+
+    def change_book_magic(self, book_id, book_name, authors_ids, genres_ids, shops_ids, libraries_ids):
+        """Direct application of get_book_magic: change everything about a book"""
+        # may god have mercy on my soul, this is divine crutching 
+
+        SHOP_LINK_CRUTCH = ["amazon.com", "naukova_dumka.com", "oreilly.com", "obc.com"]
+        LIBRARY_LINK_CRUTCH = ["central-city-library.com", "city-public-library.com", "ooal.com", "ut-arch.com"]
+        def forge_link(link):
+            return f"https://{link}/search?q={parse.quote_plus(book_name)}"
+
+        self.change_book_name(book_id, book_name)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute("DELETE FROM book_author WHERE book = %s", (book_id,))
+                values = [(book_id, a_id) for a_id in authors_ids]
+                args_str = ",".join(cur.mogrify("(%s,%s)", v).decode("utf-8") for v in values)
+                if args_str: cur.execute(f"INSERT INTO book_author (book, author) VALUES " + args_str) 
+
+                cur.execute("DELETE FROM book_genre WHERE book = %s", (book_id,))
+                values = [(book_id, g_id) for g_id in genres_ids]
+                args_str = ",".join(cur.mogrify("(%s,%s)", v).decode("utf-8") for v in values)
+                if args_str: cur.execute("INSERT INTO book_genre (book, genre) VALUES " + args_str)
+
+                cur.execute("DELETE FROM book_shop WHERE book = %s", (book_id,))
+                values = [(book_id, s_id, 1.0*random.randint(10,1000), forge_link(SHOP_LINK_CRUTCH[s_id-1])) for s_id in shops_ids]
+                args_str = ",".join(cur.mogrify("(%s,%s,%s,%s)", v).decode("utf-8") for v in values)
+                if args_str: cur.execute("INSERT INTO book_shop (book, shop, price, link) VALUES " + args_str)
+
+                cur.execute("DELETE FROM book_library WHERE book = %s", (book_id,))
+                values = [(book_id, l_id, True, forge_link(LIBRARY_LINK_CRUTCH[l_id-1])) for l_id in libraries_ids]
+                args_str = ",".join(cur.mogrify("(%s,%s,%s,%s)", v).decode("utf-8") for v in values)
+                if args_str: cur.execute("INSERT INTO book_library (book, library, available, link) VALUES " + args_str)
+                
+                self.conn.commit()
+
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error: {e}")
 
 # TEST
 if __name__ == '__main__':
