@@ -76,6 +76,9 @@ class DialogueProcessor:
                     return self.format_as_dict('Please clarify authors or say cancel to stop', Emotion.ASK)
                 else:
                     return self.answer_for_nonempty_potential_authors(potential_authors)
+            elif book_name := re.search(r'(?:\bname\s+is\s+|\bwith\s+name\s+)(.*)', book_description):
+                name = book_name.group(1)
+                return self.answer_book_name(name.strip())
             elif len(self.book_specifiers)>0:
                 return self.answer_books_by_genres_only()
             else:
@@ -231,9 +234,6 @@ class DialogueProcessor:
         if text_l == 'cancel':
             self.current_processor = self.process_default
             return self.format_as_dict('Cancelling search', Emotion.YES)
-        if book_name:=re.search(r'(?:\bname\b).*(?:\bis\b)?(.*)', text_l):
-            name = book_name.group(1)
-            return self.answer_book_name(name)
         if authors_desc:=re.search(r'(?:authors?)(?:.*is|.*are)?(.*)', text_l):
             potential_authors = [s for s in re.findall(word_regex, authors_desc.group(1)) if s!='and']
             if len(potential_authors)==0:
@@ -245,6 +245,9 @@ class DialogueProcessor:
             self.book_specifiers = genre_desc.group(1).strip()
             if len(self.book_specifiers)>0:
                 return self.answer_books_by_genres_only()
+        elif book_name:=re.search(r'(?:\bname\b.*\bis\s)?(.*)', text_l):
+            name = book_name.group(1)
+            return self.answer_book_name(name.strip())
         return self.format_as_dict('Description is not recognisable, please say book genres, name or authors, or say cancel if you want to stop', Emotion.WAIT)
 
     def process_after_books_found(self, text):
