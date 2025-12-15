@@ -85,7 +85,7 @@ class DialogueProcessor:
                 self.current_processor = self.process_find_book
                 return self.format_as_dict('Please describe the book you want to find', Emotion.ASK)
         elif library_desc:=re.search(r'(?:\bfind\b|\bsearch\b(?:\s+for\b)?)(.*)(?:librar(?:y|ies))(.*)', text_l):
-            self.library_specifiers = [s for s in re.findall(word_regex, library_desc.group(1)) if s!='and']
+            self.library_specifiers = library_desc.group(1).strip()#[s for s in re.findall(word_regex, library_desc.group(1)) if s!='and']
             if close_to:=re.search(r'(?:\bnear\b|\bclose\b(?:\s+to\b)?)(.*)', library_desc.group(2)):
                 if re.search(r'(?:\bme\b|(?:\bmy\b(?:home|house|location)))', close_to.group(1)):
                     return self.format_as_dict('Address queries are not implemented yet') # implement
@@ -103,7 +103,7 @@ class DialogueProcessor:
                 else:
                     return self.answer_libraries_by_specifiers()
         elif shop_desc:=re.search(r'(?:\bfind\b|\bsearch\b(?:\s+for\b)?)(.*)(?:shops?)(.*)', text_l):
-            self.shop_specifiers = [s for s in re.findall(word_regex, shop_desc.group(1)) if s!='and']
+            self.shop_specifiers = shop_desc.group(1).strip()#[s for s in re.findall(word_regex, shop_desc.group(1)) if s!='and']
             if close_to:=re.search(r'(?:\bnear\b|\bclose\b(?:\s+to\b)?)(.*)', shop_desc.group(2)):
                 if re.search(r'(?:\bme\b|(?:\bmy\b(?:home|house|location)))', close_to.group(1)):
                     return self.format_as_dict('Address queries are not implemented yet') # implement
@@ -289,7 +289,7 @@ class DialogueProcessor:
 
     def process_find_library(self, text): # implement address queries
         text_l = text.lower()
-        self.library_specifiers = re.findall(word_regex, text)
+        self.library_specifiers = text_l#re.findall(word_regex, text)
         self.current_processor = self.process_default
         if len(self.library_specifiers)==0:
             return self.format_as_dict('Description is not clear', Emotion.NO)
@@ -297,7 +297,7 @@ class DialogueProcessor:
 
     def process_find_shop(self, text): # implement address queries
         text_l = text.lower()
-        self.shop_specifiers = re.findall(word_regex, text)
+        self.shop_specifiers = text_l#re.findall(word_regex, text)
         self.current_processor = self.process_default
         if len(self.shop_specifiers)==0:
             return self.format_as_dict('Description is not clear', Emotion.NO)
@@ -330,14 +330,18 @@ class DialogueProcessor:
             return None
         if len(self.library_specifiers)==0:
             return []
-        return self.database_connector.get_libraries_by_specialties(self.library_specifiers)
+        library_specifiers = self.library_specifiers
+        specialties = [s for s in self.get_all_specialties() if re.search(s.lower(), library_specifiers)]
+        return self.database_connector.get_libraries_by_specialties(specialties)
 
     def search_shops(self): # implement address queries
         if not self.database_connector:
             return None
         if len(self.shop_specifiers)==0:
             return []
-        return self.database_connector.get_shops_by_specialties(self.shop_specifiers)
+        shop_specifiers = self.shop_specifiers
+        specialties = [s for s in self.get_all_specialties() if re.search(s.lower(), shop_specifiers)]
+        return self.database_connector.get_shops_by_specialties(specialties)
 
     def search_libraries_by_book(self):
         if not self.database_connector:
